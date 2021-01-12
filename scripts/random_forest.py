@@ -13,11 +13,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 import matplotlib
-#matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
+
 
 class Pose_C:
 	def __init__(self,timestamp,pos,orientation):
@@ -245,6 +246,7 @@ class Images_C:
 		self.images = new_array
 		
 def main():
+	print('test')
 	ref_odom = Odometry_C()
 	ref_odom.load('lio_loop.csv')
 	print('ref_odom length:' + str(ref_odom.length()))
@@ -282,13 +284,16 @@ def main():
 	sample = []
 	min_size = min(ref_odom.size(),openvslam_odom.size(),orb_zed_odom.size())
 
-	for i in range(min_size):
+	for i in range(1,min_size):
 		#x = np.hstack(openvslam_odom.array[i].getPos(), orb_zed_odom.array[i].getPos())
-		x = (openvslam_odom.array[i].getPos(),orb_zed_odom.array[i].getPos())
+		x = (openvslam_odom.array[i].getPos(),orb_zed_odom.array[i].getPos(),\
+		openvslam_odom.array[i-1].getPos(),orb_zed_odom.array[i-1].getPos(),\
+		openvslam_odom.array[i-2].getPos(),orb_zed_odom.array[i-2].getPos())
 		sample.append((np.hstack(x),ref_odom.array[i].getPos()))
 
 	#create training data,test data
-	boundary = 600
+	#boundary = 500 
+	boundary = 850 
 	#r_sample = random.sample(sample,len(sample))	
 	r_sample = sample
 
@@ -300,11 +305,11 @@ def main():
 		x_train.append(r_sample[i][0])
 		y_train.append(r_sample[i][1])
 	
-	for i in range(boundary,min_size):
+	for i in range(boundary,len(r_sample)):
 		x_test.append(r_sample[i][0])
 		y_test.append(r_sample[i][1])
 	#machine learning
-	model = RandomForestRegressor(n_estimators=100,max_depth=100)
+	model = RandomForestRegressor(n_estimators=100,max_depth=10)
 	model.fit(x_train,y_train)
 	importance = model.feature_importances_   
 # 学習データの正解率
@@ -323,7 +328,7 @@ def main():
 		print(num)
 
 	predict_input = []
-	for i in range(min_size):
+	for i in range(len(sample)):
 		predict_input.append(sample[i][0])
 
 	output = model.predict(predict_input)
@@ -332,7 +337,7 @@ def main():
 	print(sample[boundary][1][1])
 	ax.scatter([sample[boundary][1][0]],[sample[boundary][1][1]],color='blue' ,zorder=100)
 	ax.legend()
-	plt.savefig('not_random.png')
+	plt.savefig('not_random_3frames_depth10.png')
 	
 fig = plt.figure(figsize=(5,5))
 #ax = fig.add_subplot(111, projection='3d')
