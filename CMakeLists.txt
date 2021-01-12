@@ -163,6 +163,7 @@ include_directories(
  catkin_install_python(PROGRAMS
    scripts/image_save.py
 	 scripts/random_forest.py
+	 scripts/random_forest_relativePos.py
 	 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

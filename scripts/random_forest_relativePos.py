@@ -56,7 +56,7 @@ class Pose_C:
 
 		tmp = tf.transformations.quaternion_multiply(origin_quat_inv,relative_pos)
 		new_relative_pos = tf.transformations.quaternion_multiply(tmp,origin_quat)
-
+#TODO
 		new_relative_quat = tf.transformations.quaternion_multiply(raw_quat,origin_quat_inv)
 		
 		ret_pose = Pose_C(self.__timestamp,new_relative_pos[0:3],new_relative_quat)
@@ -195,6 +195,8 @@ class Odometry_C:
 			r_ori = self.array[i].getOrientation()
 			pre_pose = self.array[i].getPos()
 			pre_ori = self.array[i].getOrientation
+			#abs_pos =
+			#abs_ori =
 
 			#pos =	 
 	def length(self):
@@ -260,6 +262,7 @@ def main():
 	orb_zed_odom.setScale(ref_odom.length() / orb_zed_odom.length())
 	orb_zed_odom.rotate(0.0,0.0,0.05)
 
+
 	'''
 	orb_rs_odom = Odometry_C()
 	orb_rs_odom.load('./loop/orb_rs_loop_localize.csv')
@@ -278,22 +281,32 @@ def main():
 	#orb_rs_odom.plot()
 	ref_odom.plot()
 
+	#calculate relative pose
+	openvslam_odom_rel = openvslam_odom.getRelativeOdom()
+	orb_zed_odom_rel = orb_zed_odom.getRelativeOdom()
+	ref_odom_rel = ref_odom.getRelativeOdom()
+
+
 	#create dataset
 	sample = []
 	min_size = min(ref_odom.size(),openvslam_odom.size(),orb_zed_odom.size())
 
 	for i in range(1,min_size):
-		#x = np.hstack(openvslam_odom.array[i].getPos(), orb_zed_odom.array[i].getPos())
-		x = (openvslam_odom.array[i].getPos(),orb_zed_odom.array[i].getPos(),\
-		openvslam_odom.array[i-1].getPos(),orb_zed_odom.array[i-1].getPos(),\
-		openvslam_odom.array[i-2].getPos(),orb_zed_odom.array[i-2].getPos())
-		sample.append((np.hstack(x),ref_odom.array[i].getPos()))
+		#x = np.hstack(openvslam_odom_rel.array[i].getPos(), orb_zed_odom.array[i].getPos())
+
+		'''
+		x = (openvslam_odom_rel.array[i].getPos(),orb_zed_odom_rel.array[i].getPos(),\
+		openvslam_odom_rel.array[i-1].getPos(),orb_zed_odom_rel.array[i-1].getPos(),\
+		openvslam_odom_rel.array[i-2].getPos(),orb_zed_odom_rel.array[i-2].getPos())
+		'''
+		x = (openvslam_odom_rel.array[i].getPos(),orb_zed_odom_rel.array[i].getPos())
+		sample.append((np.hstack(x),ref_odom_rel.array[i].getPos()))
 
 	#create training data,test data
 	#boundary = 500 
-	boundary = 850 
-	#r_sample = random.sample(sample,len(sample))	
-	r_sample = sample
+	boundary = 1300 
+	r_sample = random.sample(sample,len(sample))	
+	#r_sample = sample
 
 	x_train = []
 	y_train = []
@@ -307,7 +320,7 @@ def main():
 		x_test.append(r_sample[i][0])
 		y_test.append(r_sample[i][1])
 	#machine learning
-	model = RandomForestRegressor(n_estimators=100,max_depth=10)
+	model = RandomForestRegressor(n_estimators=100,max_depth=100)
 	model.fit(x_train,y_train)
 	importance = model.feature_importances_   
 # 学習データの正解率
@@ -335,9 +348,11 @@ def main():
 	print(sample[boundary][1][1])
 	ax.scatter([sample[boundary][1][0]],[sample[boundary][1][1]],color='blue' ,zorder=100)
 	ax.legend()
+
 	plt.savefig('not_random_3frames_depth10.png')
 	
 fig = plt.figure(figsize=(5,5))
+plt.axes().set_aspect('equal')
 #ax = fig.add_subplot(111, projection='3d')
 ax = fig.add_subplot(111)
 if __name__ == "__main__":
