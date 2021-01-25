@@ -164,6 +164,7 @@ include_directories(
    scripts/image_save.py
 	 scripts/random_forest.py
 	 scripts/random_forest_relativePos.py
+	 scripts/SLAMcluster.py
 	 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

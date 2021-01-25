@@ -6,6 +6,7 @@ import sys
 import copy
 import pandas as pd
 import numpy as np
+import datetime
 import tf
 import random
 import math
@@ -174,7 +175,7 @@ class Odometry_C:
 		ret.array = new_array
 		return ret
 
-	def plot(self):
+	def plot(self,fignum):
 			
 		x_list = []
 		y_list = [] 
@@ -183,7 +184,10 @@ class Odometry_C:
 			x_list.append(tmp.getPos()[0])
 			y_list.append(tmp.getPos()[1])
 			z_list.append(tmp.getPos()[2])
-		ax.plot(x_list,y_list,label = self.name)
+		if fignum==0:
+			ax.plot(x_list,y_list,label = self.name)
+		else:
+			ax2.plot(x_list,y_list,label = self.name)
 		
 
 #TODO
@@ -204,6 +208,16 @@ class Odometry_C:
 			length = length + np.linalg.norm(delta)
 
 		return length
+
+	def split(self,begin,end):
+		new_array = []
+		for i in range(begin,end):
+			new_array.append(self.array[i])
+
+		new_odom = Odometry_C()
+		new_odom.array = new_array
+		new_odom.name = self.name
+		return new_odom
 
 class Images_C:
 	def __init__(self):
@@ -273,10 +287,30 @@ def main():
 	openvslam_odom.extractFromTimeList(ref_timestamps)
 	orb_zed_odom.extractFromTimeList(ref_timestamps)
 
-	openvslam_odom.plot()
-	orb_zed_odom.plot()
-	#orb_rs_odom.plot()
-	ref_odom.plot()
+	ref_train_odom_abs = ref_odom.split(0,850)
+	ref_train_odom_abs.name = 'Lio mapping'
+	ref_train_odom_abs.plot(0)
+
+	ref_test_odom_abs = ref_odom.split(850,ref_odom.size())
+	ref_test_odom_abs.name = 'Lio mapping'
+	ref_test_odom_abs.plot(1)
+
+	open_train_odom_abs = openvslam_odom.split(0,850)
+	open_train_odom_abs.name = 'OpenVSLAM(train)'
+	open_train_odom_abs.plot(0)
+
+	open_test_odom_abs = openvslam_odom.split(850,openvslam_odom.size())
+	open_test_odom_abs.name = 'OpenVSLAM(test)'
+	open_test_odom_abs.plot(1)
+
+	orb_train_odom_abs = orb_zed_odom.split(0,850)
+	orb_train_odom_abs.name = 'ORB SLAM2(train)'
+	orb_train_odom_abs.plot(0)
+
+	orb_test_odom_abs = orb_zed_odom.split(850,orb_zed_odom.size())
+	orb_test_odom_abs.name = 'ORB SLAM2(test)'
+	orb_test_odom_abs.plot(1)
+
 
 	#create dataset
 	sample = []
@@ -284,10 +318,19 @@ def main():
 
 	for i in range(1,min_size):
 		#x = np.hstack(openvslam_odom.array[i].getPos(), orb_zed_odom.array[i].getPos())
+		"""
 		x = (openvslam_odom.array[i].getPos(),orb_zed_odom.array[i].getPos(),\
 		openvslam_odom.array[i-1].getPos(),orb_zed_odom.array[i-1].getPos(),\
 		openvslam_odom.array[i-2].getPos(),orb_zed_odom.array[i-2].getPos())
 		sample.append((np.hstack(x),ref_odom.array[i].getPos()))
+		"""
+		x = (openvslam_odom.array[i].getPos(),\
+		openvslam_odom.array[i].getOrientation(),\
+		orb_zed_odom.array[i].getPos(),\
+		orb_zed_odom.array[i].getOrientation())
+
+		y = (ref_odom.array[i].getPos(),ref_odom.array[i].getOrientation())
+		sample.append((np.hstack(x),np.hstack(y)))
 
 	#create training data,test data
 	#boundary = 500 
@@ -317,29 +360,62 @@ def main():
 	print("Test :", model.score(x_test, y_test))
 	
 	y_train_pred = model.predict(x_train)
-	y_pred = model.predict(x_test)
+	y_test_pred = model.predict(x_test)
 	print('MSE train data: ', mean_squared_error(y_train, y_train_pred)) # 学習データを用いたときの平均二乗誤差を出力
-	print('MSE test data: ', mean_squared_error(y_test, y_pred))         # 検証データを用いたときの平均二乗誤差を出力
+	print('MSE test data: ', mean_squared_error(y_test, y_test_pred))         # 検証データを用いたときの平均二乗誤差を出力
 
 #重要度
 	for num in importance:
 		print(num)
 
-	predict_input = []
-	for i in range(len(sample)):
-		predict_input.append(sample[i][0])
 
-	output = model.predict(predict_input)
-	ax.plot(output[:,0],output[:,1],label = 'prediction')
-	print(sample[boundary][1][0])
-	print(sample[boundary][1][1])
-	ax.scatter([sample[boundary][1][0]],[sample[boundary][1][1]],color='blue' ,zorder=100)
-	ax.legend()
-	plt.savefig('not_random_3frames_depth10.png')
+#予測経路作成
+#学習データ
+			
+	train_predict_odom = Odometry_C()
+	train_predict_odom.name = 'prediciton(train)'	
+	#train_predict_odom.array.append(Pose_C(0.0,np.zeros(3),np.array([0.0,0.0,0.0,1.0])))
+	#train_predict_odom.array.append(OpenVSLAM_plot_odom.array[100])
+
+	for i in range(y_train_pred.shape[0]):
+		raw_data = y_train_pred[i]
+		pose = Pose_C(0.0,raw_data[0:3],raw_data[3:])
+		train_predict_odom.array.append(copy.deepcopy(pose))
 	
-fig = plt.figure(figsize=(5,5))
+	train_predict_odom.plot(0)
+
+#テストデータ
+	test_predict_odom = Odometry_C()
+	test_predict_odom.name = 'prediciton(test)'
+	
+	for i in range(y_test_pred.shape[0]):
+		raw_data = y_test_pred[i]
+		pose = Pose_C(0.0,raw_data[0:3],raw_data[3:])
+		test_predict_odom.array.append(copy.deepcopy(pose))
+	
+	test_predict_odom.plot(1)
+
+	#ax.scatter([sample[boundary][1][0]],[sample[boundary][1][1]],color='blue' ,zorder=100)
+
+	ax.legend(loc=2,fontsize = 7)
+	ax2.legend(loc=2,fontsize = 7)
+	ax.set_xlabel('x[m]')
+	ax.set_ylabel('y[m]')
+	ax.set_xlim(-20.0,75.0)
+	ax.set_ylim(-5.0,60.0)
+	ax2.set_xlabel('x[m]')
+	ax2.set_ylabel('y[m]')
+	ax2.set_xlim(-20.0,75.0)
+	ax2.set_ylim(-5.0,60.0)
+
+	time = datetime.datetime.now()
+	plt.tight_layout()
+	plt.savefig(time.strftime ( '%Y–%m–%d-%H:%M:%S' ))
+	
+fig = plt.figure()
+ax = fig.add_subplot(211,aspect="equal")
+ax2 = fig.add_subplot(212,aspect="equal")
 #ax = fig.add_subplot(111, projection='3d')
-ax = fig.add_subplot(111)
 if __name__ == "__main__":
 	main()
 
