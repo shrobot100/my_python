@@ -400,7 +400,55 @@ def plotKankeiVector(kankeivec,mean,cov,title,filename):
 	a.grid()
 
 	figure.savefig(filename,dpi = 300)
+def compareTwoOdom(odom1,odom2,base_filename):
+	fig = plt.figure()
+	min_time = max(odom1.array[0].getTime(),odom2.array[0].getTime())
+	odom1.extract(min_time,0.2)
+	odom2.extract(min_time,0.2)
+	odom1 = odom1.split(0,850)
+	odom2 = odom2.split(0,850)
+	kankei_vector,mean,cov = calDiffVectorMap(odom1,odom2,50,1,850)
+	for i in range(850-50):
+		fig.clf()
+		ax_odom = fig.add_subplot(221,aspect='equal')
+		ax_kankeivec = fig.add_subplot(223,aspect='equal')
+		ax_relpos = fig.add_subplot(224,aspect='equal')
 
+		#Plot setting
+		ax_odom.grid()	
+		ax_kankeivec.set_xlim(-0.5,0.5)
+		ax_kankeivec.set_ylim(-0.5,0.5)
+		ax_kankeivec.grid()
+		ax_relpos.grid()
+		#ax_relpos.set_xlim(0,100)
+		#ax_relpos.set_ylim(-100,100)
+
+
+		odom1.plot(ax_odom)
+		odom2.plot(ax_odom)
+		odom1_relpos = odom1.array[50+i].getRelativePose(odom1.array[i])
+		odom2_relpos = odom2.array[50+i].getRelativePose(odom2.array[i])
+		
+		#比較領域表示
+		ax_odom.scatter(odom1.array[i].getPos()[0],odom1.array[i].getPos()[1],s=1,zorder=100,color='r')
+		ax_odom.scatter(odom2.array[i].getPos()[0],odom2.array[i].getPos()[1],s=1,zorder=101,color='r')
+		ax_odom.scatter(odom1.array[50+i].getPos()[0],odom1.array[50+i].getPos()[1],s=1,zorder=50,color='g')
+		ax_odom.scatter(odom2.array[50+i].getPos()[0],odom2.array[50+i].getPos()[1],s=1,zorder=51,color='g')
+		#相対移動表示
+		ax_relpos.scatter(odom1_relpos.getPos()[0],odom1_relpos.getPos()[1])
+		ax_relpos.scatter(odom2_relpos.getPos()[0],odom2_relpos.getPos()[1])
+		#位置関係ベクトル表示
+		for data in kankei_vector:
+			ax_kankeivec.scatter(data[0],data[1],s=1,color='b')
+		ax_kankeivec.scatter(kankei_vector[i][0],kankei_vector[i][1],s=2,color='r')
+
+		index_str = '{0:04d}'.format(i)
+		filename = base_filename + index_str 
+		fig.savefig(filename)
+		print('save:' + filename)
+
+		
+		
 def analysis(odom_list):
 	min_time = 0.0
 	for odom in odom_list:
@@ -416,6 +464,8 @@ def analysis(odom_list):
 		for odom2 in odom_list:
 			if odom1.name != odom2.name:
 				kankei_vector,mean,cov = calDiffVectorMap(odom1,odom2,50,1,850)
+				print('mean:' + str(mean))
+				print('cov:' + str(cov))
 				title = odom1.name + ' ' + odom2.name
 				filename = odom1.name + '_' + odom2.name
 				plotKankeiVector(kankei_vector,mean,cov, title,filename) 
@@ -449,8 +499,23 @@ def main():
 		time = lio_time_shift.array[i].getTime()
 		lio_time_shift.array[i].setTime(time+bias)	
 
+	lio_odom_noise = copy.deepcopy(lio_odom)
+	lio_odom_noise.name = 'lio_noise'
+	noise = np.random.normal(0, 0.1,3*len(lio_odom_noise.array)) #mean0,sigma10
+	for i in range(0,len(noise),3):
+		origin_pos = lio_odom_noise.array[int(i/3)].getPos()
+		new_pos = np.zeros(3)
+		new_pos[0] = noise[i]+origin_pos[0]
+		new_pos[1] = noise[i+1]+origin_pos[1]
+		new_pos[2] = noise[i+2]+origin_pos[2]
+		lio_odom_noise.array[int(i/3)].setPos(new_pos)
 	
-	odom_list = [lio_odom,openvslam_odom,orb_zed_odom,wheel_odom]
+
+	odom_list = [lio_odom,lio_odom_noise]
+
+
+
+	#compareTwoOdom(lio_odom,lio_odom_noise,'lio_noise')
 	'''	
 	min_time = max(openvslam_odom.array[0].getTime(),lio_odom.array[0].getTime(),orb_zed_odom.array[0].getTime())
 	lio_odom.extract(min_time,0.2)
@@ -484,6 +549,7 @@ def main():
 #Plot setting
 	ax.grid()
 	fig.savefig('./plot/' + time.strftime ( '%Y–%m–%d-%H:%M:%S' ))
+
 	
 if __name__ == "__main__":
 	main()
