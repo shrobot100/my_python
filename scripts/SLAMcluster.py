@@ -306,7 +306,40 @@ def ClusteringFromTwoFrame(odom1_rel,odom2_rel,begin,threshold):
 	else:
 		return 1
 	'''
+#TODO
+def calDiffVectorMap_v2(odom1,odom2,win_distance,d_n,N):
+	kankei_vector = []
+	range_plot = []
+	flag = False
+	for i in range(N):
+		origin_pose1 = odom1.array[i]
+		origin_pose2 = odom2.array[i]
+		if flag==True:
+			break
+		for j in range(i,N,d_n):#d_nずつずらす
+			distance = np.linalg.norm(odom1.array[j].getPos() - origin_pose1.getPos())
+			if distance >= win_distance:
+				target_pose1 = odom1.array[j]
+				target_pose2 = odom2.array[j]
+				break
+			if j==N-1:
+				flag = True
+				
 
+		line = np.concatenate([origin_pose1.getPos(),origin_pose2.getPos(),target_pose1.getPos(),target_pose2.getPos()],0)
+		range_plot.append(line)
+		relative_pose1 = target_pose1.getRelativePose(origin_pose1)
+		relative_pose2 = target_pose2.getRelativePose(origin_pose2)	
+		delta = relative_pose1.getPos() - relative_pose2.getPos()
+		kankei_vector.append(delta)
+	#分散
+	array = np.array(kankei_vector)
+	cov = np.cov(array[:,0],array[:,1])
+	#平均
+	mean = np.mean(array[:,0:2],axis=0)
+	return kankei_vector,mean,cov,range_plot
+
+#k:window size N:max size d_n kizami 
 def calDiffVectorMap(odom1,odom2,k,d_n,N):
 	kankei_vector = []
 	cnt = 0
@@ -321,18 +354,9 @@ def calDiffVectorMap(odom1,odom2,k,d_n,N):
 		relative_pose2 = target_pose2.getRelativePose(origin_pose2) 
 		#ax3.scatter(relative_pose2.getPos()[0],relative_pose2.getPos()[1],s=1)
 
-		'''	
-		colorlist = ["r", "g", "b", "c", "m", "y", "k", "w"]
-		ax2.scatter(origin_pose1.getPos()[0],origin_pose1.getPos()[1],s=5,zorder=100,color = colorlist[cnt%8])
-		ax2.scatter(target_pose1.getPos()[0],target_pose1.getPos()[1],s=10,zorder=100,color = colorlist[cnt%8])
-		'''
 		delta = relative_pose1.getPos() - relative_pose2.getPos()
 		delta_normal = delta / (1/2*(np.linalg.norm(relative_pose1.getPos())+np.linalg.norm(relative_pose2.getPos())))
-		'''
-		ax.scatter(delta_normal[0],delta_normal[1],s=1)
-		ax.set_xlim(-0.5,0.5)
-		ax.set_ylim(-0.5,0.5)
-		'''
+
 		kankei_vector.append(delta_normal)
 		cnt = cnt + 1
 
@@ -394,8 +418,9 @@ def plotKankeiVector(kankeivec,mean,cov,title,filename):
 
 	x,y = calEllipse(mean,cov)
 	a.plot(x,y)
-	a.set_xlim(-0.5,0.5)
-	a.set_ylim(-0.5,0.5)
+	limit = 5.0
+	a.set_xlim(-limit,limit)
+	a.set_ylim(-limit,limit)
 	a.set_title(title)
 	a.grid()
 
@@ -407,8 +432,9 @@ def compareTwoOdom(odom1,odom2,base_filename):
 	odom2.extract(min_time,0.2)
 	odom1 = odom1.split(0,850)
 	odom2 = odom2.split(0,850)
-	kankei_vector,mean,cov = calDiffVectorMap(odom1,odom2,50,1,850)
-	for i in range(850-50):
+	#kankei_vector,mean,cov = calDiffVectorMap(odom1,odom2,50,1,850)
+	kankei_vector,mean,cov,range_plot = calDiffVectorMap_v2(odom1,odom2,10.0,1,850)
+	for i in range(len(kankei_vector)):
 		fig.clf()
 		ax_odom = fig.add_subplot(221,aspect='equal')
 		ax_kankeivec = fig.add_subplot(223,aspect='equal')
@@ -416,8 +442,9 @@ def compareTwoOdom(odom1,odom2,base_filename):
 
 		#Plot setting
 		ax_odom.grid()	
-		ax_kankeivec.set_xlim(-0.5,0.5)
-		ax_kankeivec.set_ylim(-0.5,0.5)
+		limit = 5.0
+		ax_kankeivec.set_xlim(-limit,limit)
+		ax_kankeivec.set_ylim(-limit,limit)
 		ax_kankeivec.grid()
 		ax_relpos.grid()
 		#ax_relpos.set_xlim(0,100)
@@ -426,17 +453,17 @@ def compareTwoOdom(odom1,odom2,base_filename):
 
 		odom1.plot(ax_odom)
 		odom2.plot(ax_odom)
-		odom1_relpos = odom1.array[50+i].getRelativePose(odom1.array[i])
-		odom2_relpos = odom2.array[50+i].getRelativePose(odom2.array[i])
+		#odom1_relpos = odom1.array[50+i].getRelativePose(odom1.array[i])
+		#odom2_relpos = odom2.array[50+i].getRelativePose(odom2.array[i])
 		
 		#比較領域表示
-		ax_odom.scatter(odom1.array[i].getPos()[0],odom1.array[i].getPos()[1],s=1,zorder=100,color='r')
-		ax_odom.scatter(odom2.array[i].getPos()[0],odom2.array[i].getPos()[1],s=1,zorder=101,color='r')
-		ax_odom.scatter(odom1.array[50+i].getPos()[0],odom1.array[50+i].getPos()[1],s=1,zorder=50,color='g')
-		ax_odom.scatter(odom2.array[50+i].getPos()[0],odom2.array[50+i].getPos()[1],s=1,zorder=51,color='g')
+		ax_odom.scatter(range_plot[i][0],range_plot[i][1],s=1,zorder=100,color='r')
+		ax_odom.scatter(range_plot[i][3],range_plot[i][4],s=1,zorder=101,color='r')
+		ax_odom.scatter(range_plot[i][6],range_plot[i][7],s=1,zorder=50,color='g')
+		ax_odom.scatter(range_plot[i][9],range_plot[i][10],s=1,zorder=51,color='g')
 		#相対移動表示
-		ax_relpos.scatter(odom1_relpos.getPos()[0],odom1_relpos.getPos()[1])
-		ax_relpos.scatter(odom2_relpos.getPos()[0],odom2_relpos.getPos()[1])
+		#ax_relpos.scatter(odom1_relpos.getPos()[0],odom1_relpos.getPos()[1])
+		#ax_relpos.scatter(odom2_relpos.getPos()[0],odom2_relpos.getPos()[1])
 		#位置関係ベクトル表示
 		for data in kankei_vector:
 			ax_kankeivec.scatter(data[0],data[1],s=1,color='b')
@@ -463,7 +490,7 @@ def analysis(odom_list):
 	for odom1 in odom_list:
 		for odom2 in odom_list:
 			if odom1.name != odom2.name:
-				kankei_vector,mean,cov = calDiffVectorMap(odom1,odom2,50,1,850)
+				kankei_vector,mean,cov,range_plot = calDiffVectorMap_v2(odom1,odom2,10.0,1,850)
 				print('mean:' + str(mean))
 				print('cov:' + str(cov))
 				title = odom1.name + ' ' + odom2.name
@@ -511,11 +538,11 @@ def main():
 		lio_odom_noise.array[int(i/3)].setPos(new_pos)
 	
 
-	odom_list = [lio_odom,lio_odom_noise]
+	odom_list = [lio_odom,orb_zed_odom,openvslam_odom,wheel_odom]
 
 
 
-	#compareTwoOdom(lio_odom,lio_odom_noise,'lio_noise')
+	compareTwoOdom(lio_odom,openvslam_odom,'lio_openv')
 	'''	
 	min_time = max(openvslam_odom.array[0].getTime(),lio_odom.array[0].getTime(),orb_zed_odom.array[0].getTime())
 	lio_odom.extract(min_time,0.2)
@@ -535,7 +562,7 @@ def main():
 	new_wheel.plot(ax)
 	'''
 
-	analysis(odom_list)	
+	#analysis(odom_list)	
 	'''
 	min_size = min(new_open.size(),new_lio.size())
 	kankei_vectorAB,meanAB,covAB = calDiffVectorMap(new_lio,new_open,50,1,min_size)
