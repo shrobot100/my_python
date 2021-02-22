@@ -165,6 +165,7 @@ include_directories(
 	 scripts/random_forest.py
 	 scripts/random_forest_relativePos.py
 	 scripts/SLAMcluster.py
+	 scripts/pdr.py
 	 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
