@@ -518,6 +518,8 @@ def main():
 	orb_zed_odom.rotate(0.0,0.0,0.05)
 	print('orb max dalta time' + str(orb_zed_odom.maxDeltaTime()))
 	print('orb mean dalta time ' + str(orb_zed_odom.meanDeltaTime()))
+
+	ndt_odom = Odometry_C(filename='./ndt_localize_loop.csv',label='NDT mapping')
 	
 	lio_time_shift = copy.deepcopy(lio_odom)
 	lio_time_shift.name = 'shift'
@@ -538,11 +540,11 @@ def main():
 		lio_odom_noise.array[int(i/3)].setPos(new_pos)
 	
 
-	odom_list = [lio_odom,orb_zed_odom,openvslam_odom,wheel_odom]
+	odom_list = [lio_odom,orb_zed_odom,openvslam_odom,wheel_odom,ndt_odom]
 
 
 
-	compareTwoOdom(lio_odom,openvslam_odom,'lio_openv')
+	#compareTwoOdom(lio_odom,openvslam_odom,'lio_openv')
 	'''	
 	min_time = max(openvslam_odom.array[0].getTime(),lio_odom.array[0].getTime(),orb_zed_odom.array[0].getTime())
 	lio_odom.extract(min_time,0.2)
@@ -562,7 +564,7 @@ def main():
 	new_wheel.plot(ax)
 	'''
 
-	#analysis(odom_list)	
+	analysis(odom_list)	
 	'''
 	min_size = min(new_open.size(),new_lio.size())
 	kankei_vectorAB,meanAB,covAB = calDiffVectorMap(new_lio,new_open,50,1,min_size)
