@@ -430,15 +430,16 @@ def compareTwoOdom(odom1,odom2,base_filename):
 	min_time = max(odom1.array[0].getTime(),odom2.array[0].getTime())
 	odom1.extract(min_time,0.2)
 	odom2.extract(min_time,0.2)
-	odom1 = odom1.split(0,850)
-	odom2 = odom2.split(0,850)
+	odom1 = odom1.split(0,1200)
+	odom2 = odom2.split(0,1200)
 	#kankei_vector,mean,cov = calDiffVectorMap(odom1,odom2,50,1,850)
-	kankei_vector,mean,cov,range_plot = calDiffVectorMap_v2(odom1,odom2,10.0,1,850)
+	kankei_vector,mean,cov,range_plot = calDiffVectorMap_v2(odom1,odom2,10.0,1,1200)
+	x,y = calEllipse(mean,cov)
 	for i in range(len(kankei_vector)):
 		fig.clf()
-		ax_odom = fig.add_subplot(221,aspect='equal')
-		ax_kankeivec = fig.add_subplot(223,aspect='equal')
-		ax_relpos = fig.add_subplot(224,aspect='equal')
+		ax_odom = fig.add_subplot(121,aspect='equal')
+		ax_kankeivec = fig.add_subplot(122,aspect='equal')
+		#ax_relpos = fig.add_subplot(224,aspect='equal')
 
 		#Plot setting
 		ax_odom.grid()	
@@ -446,7 +447,7 @@ def compareTwoOdom(odom1,odom2,base_filename):
 		ax_kankeivec.set_xlim(-limit,limit)
 		ax_kankeivec.set_ylim(-limit,limit)
 		ax_kankeivec.grid()
-		ax_relpos.grid()
+		#ax_relpos.grid()
 		#ax_relpos.set_xlim(0,100)
 		#ax_relpos.set_ylim(-100,100)
 
@@ -464,6 +465,8 @@ def compareTwoOdom(odom1,odom2,base_filename):
 		#相対移動表示
 		#ax_relpos.scatter(odom1_relpos.getPos()[0],odom1_relpos.getPos()[1])
 		#ax_relpos.scatter(odom2_relpos.getPos()[0],odom2_relpos.getPos()[1])
+		#楕円
+		ax_kankeivec.plot(x,y)
 		#位置関係ベクトル表示
 		for data in kankei_vector:
 			ax_kankeivec.scatter(data[0],data[1],s=1,color='b')
@@ -503,48 +506,38 @@ def main():
 	fig = plt.figure()
 	ax = fig.add_subplot(111,aspect='equal')
 
-	lio_odom = Odometry_C(filename='lio_loop.csv', label='Lio')
+	#lio_odom = Odometry_C(filename='lio_loop.csv', label='Lio')
 
-	wheel_odom = Odometry_C(filename='wheel_odom_loop.csv',label='Wheel')
+	#wheel_odom = Odometry_C(filename='wheel_odom_loop.csv',label='Wheel')
 	
-	openvslam_odom = Odometry_C(filename='./loop/openvslam_loopmap_localize.csv',label='OpenVSLAM')
-	openvslam_odom.setScale(lio_odom.length() / openvslam_odom.length())
+	ndt_odom = Odometry_C(filename='~/csv/kgn_0223/ndt.csv',label='NDT mapping')
+
+	openvslam_odom = Odometry_C(filename='~/csv/kgn_0223/openv_r1.csv',label='OpenVSLAM')
+	scale = ndt_odom.length()/openvslam_odom.length()
+	print('scale')
+	print(scale)
+	openvslam_odom.setScale(125)
 	openvslam_odom.rotate(0.0,0.0,0.05)
-	print('openvslam max delta time ' + str(openvslam_odom.maxDeltaTime()))
-	print('openvslam mean delta time ' + str(openvslam_odom.meanDeltaTime()))
 
-	orb_zed_odom = Odometry_C(filename='./orb_zed2_ib_loop_localize_r05.csv',label='ORB SLAM(ZED)')
-	orb_zed_odom.setScale(lio_odom.length() / orb_zed_odom.length())
-	orb_zed_odom.rotate(0.0,0.0,0.05)
-	print('orb max dalta time' + str(orb_zed_odom.maxDeltaTime()))
-	print('orb mean dalta time ' + str(orb_zed_odom.meanDeltaTime()))
+	ndt_odom.plot(ax)
+	openvslam_odom.plot(ax)
+	ax.legend()
 
-	ndt_odom = Odometry_C(filename='./ndt_localize_loop.csv',label='NDT mapping')
+	#orb_zed_odom = Odometry_C(filename='./orb_zed2_ib_loop_localize_r05.csv',label='ORB SLAM(ZED)')
+	#orb_zed_odom.setScale(lio_odom.length() / orb_zed_odom.length())
+	#orb_zed_odom.rotate(0.0,0.0,0.05)
+	#print('orb max dalta time' + str(orb_zed_odom.maxDeltaTime()))
+	#print('orb mean dalta time ' + str(orb_zed_odom.meanDeltaTime()))
+
 	
-	lio_time_shift = copy.deepcopy(lio_odom)
-	lio_time_shift.name = 'shift'
-	bias = 0.1
-	for i in range(len(lio_time_shift.array)):
-		time = lio_time_shift.array[i].getTime()
-		lio_time_shift.array[i].setTime(time+bias)	
-
-	lio_odom_noise = copy.deepcopy(lio_odom)
-	lio_odom_noise.name = 'lio_noise'
-	noise = np.random.normal(0, 0.1,3*len(lio_odom_noise.array)) #mean0,sigma10
-	for i in range(0,len(noise),3):
-		origin_pos = lio_odom_noise.array[int(i/3)].getPos()
-		new_pos = np.zeros(3)
-		new_pos[0] = noise[i]+origin_pos[0]
-		new_pos[1] = noise[i+1]+origin_pos[1]
-		new_pos[2] = noise[i+2]+origin_pos[2]
-		lio_odom_noise.array[int(i/3)].setPos(new_pos)
 	
 
-	odom_list = [lio_odom,orb_zed_odom,openvslam_odom,wheel_odom,ndt_odom]
+	odom_list = [ndt_odom,openvslam_odom]
 
 
 
-	#compareTwoOdom(lio_odom,openvslam_odom,'lio_openv')
+
+	compareTwoOdom(ndt_odom,openvslam_odom,'ndt_openv')
 	'''	
 	min_time = max(openvslam_odom.array[0].getTime(),lio_odom.array[0].getTime(),orb_zed_odom.array[0].getTime())
 	lio_odom.extract(min_time,0.2)
@@ -564,7 +557,7 @@ def main():
 	new_wheel.plot(ax)
 	'''
 
-	analysis(odom_list)	
+	#analysis(odom_list)	
 	'''
 	min_size = min(new_open.size(),new_lio.size())
 	kankei_vectorAB,meanAB,covAB = calDiffVectorMap(new_lio,new_open,50,1,min_size)
@@ -577,7 +570,7 @@ def main():
 	time = datetime.datetime.now()
 #Plot setting
 	ax.grid()
-	fig.savefig('./plot/' + time.strftime ( '%Y–%m–%d-%H:%M:%S' ))
+	fig.savefig('./' + time.strftime ( '%Y–%m–%d-%H:%M:%S' ))
 
 	
 if __name__ == "__main__":
