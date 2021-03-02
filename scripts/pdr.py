@@ -22,6 +22,21 @@ acc_step_buf = []
 
 class Node:
 	
+	def __init__(self):
+		rospy.init_node('pdr',anonymous=True)
+#Subscriber
+		rospy.Subscriber("/android/tango1/imu",Imu,self.ImuCallback)
+#Publisher
+		self.acc_pub = rospy.Publisher('/accel_world',Imu,queue_size=10)
+		self.step_detection_pub = rospy.Publisher('/step_detection',Header,queue_size=10)
+#Service
+		rotateSrv = rospy.Service('rotation',Empty,self.handleRotation)
+		
+		#rospy.Subscriber("/android/tango1/magnetic_field",MagneticField,self.MagneticFieldCallback)
+		self.rate = rospy.Rate(10)
+		self.pre_gravity_z = 9.8
+		
+		self.rot_matrix= getRotationMatrix(0.0,0.0,0.0)
 	def handleRotation(self,req):
 		print('calculate rotation matrix')
 		if len(acc_calib_buf)<5:
@@ -80,21 +95,6 @@ class Node:
 		
 
 
-	def __init__(self):
-		rospy.init_node('pdr',anonymous=True)
-#Subscriber
-		rospy.Subscriber("/android/tango1/imu",Imu,self.ImuCallback)
-#Publisher
-		self.acc_pub = rospy.Publisher('/accel_world',Imu,queue_size=10)
-		self.step_detection_pub = rospy.Publisher('/step_detection',Header,queue_size=10)
-#Service
-		rotateSrv = rospy.Service('rotation',Empty,self.handleRotation)
-		
-		#rospy.Subscriber("/android/tango1/magnetic_field",MagneticField,self.MagneticFieldCallback)
-		self.rate = rospy.Rate(10)
-		self.pre_gravity_z = 9.8
-		
-		self.rot_matrix= getRotationMatrix(0.0,0.0,0.0)
 	def run(self):
 		print('node is running')
 		while not rospy.is_shutdown():
@@ -116,8 +116,10 @@ def calMovingAverage(data,win_size):
 
 
 def main():
-	node = Node()
-	node.run()
+	try:
+		node = Node()
+		node.run()
+	except rospy.ROSInterruptException: pass
 
 
 

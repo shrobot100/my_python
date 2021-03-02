@@ -430,10 +430,10 @@ def compareTwoOdom(odom1,odom2,base_filename):
 	min_time = max(odom1.array[0].getTime(),odom2.array[0].getTime())
 	odom1.extract(min_time,0.2)
 	odom2.extract(min_time,0.2)
-	odom1 = odom1.split(0,1200)
-	odom2 = odom2.split(0,1200)
+	odom1 = odom1.split(0,1300)
+	odom2 = odom2.split(0,1300)
 	#kankei_vector,mean,cov = calDiffVectorMap(odom1,odom2,50,1,850)
-	kankei_vector,mean,cov,range_plot = calDiffVectorMap_v2(odom1,odom2,10.0,1,1200)
+	kankei_vector,mean,cov,range_plot = calDiffVectorMap_v2(odom1,odom2,10.0,1,1300)
 	x,y = calEllipse(mean,cov)
 	for i in range(len(kankei_vector)):
 		fig.clf()
@@ -488,12 +488,12 @@ def analysis(odom_list):
 	
 	for odom in odom_list:
 		odom.extract(min_time,0.2)
-		odom = odom.split(0,850)	
+		odom = odom.split(0,1300)	
 		
 	for odom1 in odom_list:
 		for odom2 in odom_list:
 			if odom1.name != odom2.name:
-				kankei_vector,mean,cov,range_plot = calDiffVectorMap_v2(odom1,odom2,10.0,1,850)
+				kankei_vector,mean,cov,range_plot = calDiffVectorMap_v2(odom1,odom2,10.0,1,1300)
 				print('mean:' + str(mean))
 				print('cov:' + str(cov))
 				title = odom1.name + ' ' + odom2.name
@@ -510,17 +510,24 @@ def main():
 
 	#wheel_odom = Odometry_C(filename='wheel_odom_loop.csv',label='Wheel')
 	
-	ndt_odom = Odometry_C(filename='~/csv/kgn_0223/ndt.csv',label='NDT mapping')
+	ndt_odom = Odometry_C(filename='~/csv/kgn_0223/ndt_samemap.csv',label='NDT mapping')
+	lio_odom = Odometry_C(filename='~/csv/kgn_0223/lio_samemap.csv',label='Lio mapping')
 
-	openvslam_odom = Odometry_C(filename='~/csv/kgn_0223/openv_r1.csv',label='OpenVSLAM')
+	openvslam_odom = Odometry_C(filename='~/csv/kgn_0223/openv_samemap_r1.csv',label='OpenVSLAM')
+	orb_odom = Odometry_C(filename='~/csv/kgn_0223/orb_samemap.csv',label='ORBSLAM2')
+	orb_odom.setScale(1.1)
 	scale = ndt_odom.length()/openvslam_odom.length()
 	print('scale')
 	print(scale)
 	openvslam_odom.setScale(125)
 	openvslam_odom.rotate(0.0,0.0,0.05)
+	new_ndt_odom = ndt_odom.split(0,2600)
+	new_lio_odom = lio_odom.split(0,1400)
 
-	ndt_odom.plot(ax)
+	new_ndt_odom.plot(ax)
 	openvslam_odom.plot(ax)
+	orb_odom.plot(ax)
+	new_lio_odom.plot(ax)
 	ax.legend()
 
 	#orb_zed_odom = Odometry_C(filename='./orb_zed2_ib_loop_localize_r05.csv',label='ORB SLAM(ZED)')
@@ -532,12 +539,15 @@ def main():
 	
 	
 
-	odom_list = [ndt_odom,openvslam_odom]
+	odom_list = [new_ndt_odom,new_lio_odom,openvslam_odom,orb_odom]
 
 
 
 
-	compareTwoOdom(ndt_odom,openvslam_odom,'ndt_openv')
+	compareTwoOdom(new_ndt_odom,openvslam_odom,'ndt_openv')
+	compareTwoOdom(new_ndt_odom,orb_odom,'ndt_orb')
+	compareTwoOdom(new_ndt_odom,new_lio_odom,'ndt_lio')
+	compareTwoOdom(orb_odom,openvslam_odom,'orb_openv')
 	'''	
 	min_time = max(openvslam_odom.array[0].getTime(),lio_odom.array[0].getTime(),orb_zed_odom.array[0].getTime())
 	lio_odom.extract(min_time,0.2)
