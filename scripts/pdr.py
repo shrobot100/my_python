@@ -66,6 +66,9 @@ class Node:
 		accel_gcs = np.dot(self.rot_matrix,accel_calib.T)
 
 		flag = self.footdetection.run(accel_gcs[2],10)
+		#if flag==True:
+			#foot_step_timestamp = data.header.timestamp
+			#pre_foot_step_timestamp = foot_step_timestamp
 		#print(flag)	
 
 		"""
@@ -85,36 +88,49 @@ class Node:
 		while not rospy.is_shutdown():
 			self.rate.sleep()
 
+
 class footDetection:
 	def __init__(self):
-		self.acc_calib_buf_size = 100
-		self.acc_hpf_buf_size = 100
 		self.acc_step_buf_size = 50
-		self.acc_hpf_buf= []
 		self.acc_step_buf = []
 		self.pre_gravity_z = 9.8
 	def run(self,accel_z,winsize):
-		#ローパスフィルタで重力成分抽出
-		gravity_z = lowPassFilter(accel_z,self.pre_gravity_z,0.9)
-		pre_gravity_z = gravity_z
-		
-		#重力成分以外を抽出
-		accel_hpf = accel_z - gravity_z
-		self.acc_hpf_buf.append(accel_hpf)
-		if len(self.acc_hpf_buf)>self.acc_hpf_buf_size:
-			del self.acc_hpf_buf[0]
-			accel_step = calMovingAverage(self.acc_hpf_buf,winsize)
+		accel_step = calStepAccel(accel_z,10)
+		if accel_step != None:
 			self.acc_step_buf.append(accel_step)
 			if len(self.acc_step_buf)>self.acc_step_buf_size:
 				del self.acc_step_buf[0]
 				min_index = self.acc_step_buf.index(min(self.acc_step_buf)) #サンプルの中で最小値のインデックスを得る
 				if min_index==self.acc_step_buf_size//2 and self.acc_step_buf[self.acc_step_buf_size//2]< -1.0:
-					#step_detection_trigger = data.header
-					#self.step_detection_pub.publish(step_detection_trigger)
 					rospy.loginfo('detect step')	
 					return True
 		return False
 	
+class footLengthEstimator:
+	def __init__(self):
+		alpha = 0.0	
+		beta = 0.0
+	def run(self):
+		acc_step_max = 0.0
+		acc_step_min = 0.0
+		acc_pp = 0.0
+		length = alpha*(acc_pp ** (1/4))+beta
+
+def calStepAccel(accel_z,winsize):
+		#ローパスフィルタで重力成分抽出
+		gravity_z = lowPassFilter(accel_z,calStepAccel.pre_gravity_z,0.9)
+		calStepAccel.pre_gravity_z = gravity_z
+		
+		#重力成分以外を抽出
+		accel_hpf = accel_z - gravity_z
+		calStepAccel.acc_hpf_buf.append(accel_hpf)
+		if len(calStepAccel.acc_hpf_buf)>calStepAccel.acc_hpf_buf_size:
+			del calStepAccel.acc_hpf_buf[0]
+			accel_step = calMovingAverage(calStepAccel.acc_hpf_buf,winsize)
+			return accel_step
+calStepAccel.pre_gravity_z = 9.8
+calStepAccel.acc_hpf_buf = []
+calStepAccel.acc_hpf_buf_size= 100
 
 def getRotationMatrix(roll,pitch,yaw):
 	mat = np.zeros((3,3))
