@@ -16,10 +16,9 @@ import numpy as np
 import tf
 import math
 
-acc_calib_buf = []
-acc_hpf_buf= []
-acc_step_buf = []
 
+acc_calib_buf = []
+acc_calib_buf_size = 100
 class Node:
 	
 	def __init__(self):
@@ -37,6 +36,7 @@ class Node:
 		self.pre_gravity_z = 9.8
 		
 		self.rot_matrix= getRotationMatrix(0.0,0.0,0.0)
+		self.footdetection = footDetection()
 	def handleRotation(self,req):
 		print('calculate rotation matrix')
 		if len(acc_calib_buf)<5:
@@ -61,30 +61,14 @@ class Node:
 		accel_raw = np.array([data.linear_acceleration.x,data.linear_acceleration.y,data.linear_acceleration.z])
 		accel_calib = accel_raw - accel_offset
 		acc_calib_buf.append(accel_calib)
-		if len(acc_calib_buf)>100:
+		if len(acc_calib_buf)>acc_calib_buf_size:
 			del acc_calib_buf[0]
 		accel_gcs = np.dot(self.rot_matrix,accel_calib.T)
 
-		gravity_z = lowPassFilter(accel_gcs[2],self.pre_gravity_z,0.9)
-		self.pre_gravity_z = gravity_z
-		accel_hpf = accel_gcs[2] - gravity_z
-		acc_hpf_buf.append(accel_hpf)
-		
-		if len(acc_hpf_buf)>100:
-			del acc_hpf_buf[0]
-			accel_step = calMovingAverage(acc_hpf_buf,10)
-			acc_step_buf.append(accel_step)
-			if len(acc_step_buf)>50:
-				del acc_step_buf[0]
-				min_index = acc_step_buf.index(min(acc_step_buf)) #サンプルの中で最小値のインデックスを得る
-				if min_index==25 and acc_step_buf[25]< -1.0:
-					step_detection_trigger = data.header
-					self.step_detection_pub.publish(step_detection_trigger)
-					rospy.loginfo('detect step')	
-		else:
-			return
+		flag = self.footdetection.run(accel_gcs[2],10)
+		#print(flag)	
 
-
+		"""
 		imu_world_out = Imu()
 		imu_world_out.header = data.header
 		imu_world_out.linear_acceleration.x = 0.0
@@ -92,6 +76,7 @@ class Node:
 		imu_world_out.linear_acceleration.z = accel_step
 
 		self.acc_pub.publish(imu_world_out)
+		"""
 		
 
 
@@ -99,6 +84,38 @@ class Node:
 		print('node is running')
 		while not rospy.is_shutdown():
 			self.rate.sleep()
+
+class footDetection:
+	def __init__(self):
+		self.acc_calib_buf_size = 100
+		self.acc_hpf_buf_size = 100
+		self.acc_step_buf_size = 50
+		self.acc_hpf_buf= []
+		self.acc_step_buf = []
+		self.pre_gravity_z = 9.8
+	def run(self,accel_z,winsize):
+		#ローパスフィルタで重力成分抽出
+		gravity_z = lowPassFilter(accel_z,self.pre_gravity_z,0.9)
+		pre_gravity_z = gravity_z
+		
+		#重力成分以外を抽出
+		accel_hpf = accel_z - gravity_z
+		self.acc_hpf_buf.append(accel_hpf)
+		if len(self.acc_hpf_buf)>self.acc_hpf_buf_size:
+			del self.acc_hpf_buf[0]
+			accel_step = calMovingAverage(self.acc_hpf_buf,winsize)
+			self.acc_step_buf.append(accel_step)
+			if len(self.acc_step_buf)>self.acc_step_buf_size:
+				del self.acc_step_buf[0]
+				min_index = self.acc_step_buf.index(min(self.acc_step_buf)) #サンプルの中で最小値のインデックスを得る
+				if min_index==self.acc_step_buf_size//2 and self.acc_step_buf[self.acc_step_buf_size//2]< -1.0:
+					#step_detection_trigger = data.header
+					#self.step_detection_pub.publish(step_detection_trigger)
+					rospy.loginfo('detect step')	
+					return True
+		return False
+	
+
 def getRotationMatrix(roll,pitch,yaw):
 	mat = np.zeros((3,3))
 	rot_x = np.array([[1,0,0],[0,math.cos(roll),-math.sin(roll)],[0,math.sin(roll),math.cos(roll)]])
