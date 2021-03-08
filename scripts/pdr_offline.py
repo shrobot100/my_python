@@ -68,16 +68,48 @@ def lowPassFilter(mat,alpha): #一次元配列
 		ret[i] = ret[i-1]*alpha + (1-alpha)*mat[i]
 
 	return ret
+def findPeakTime(win_array,acc_peak):
+	max_idx = np.argmax(win_array[:,1]) #窓の中で最大の値をとるインデックス取得
+	if(win_array[max_idx,1] > acc_peak):
+		return win_array[max_idx,0]
+	
 
 def findFootStep(acc_z,winsize):
+	N = 100 #比較するサンプル数
+	peak_time_list = []
+	peak_idx_list = []
+	#find peak
+	pre_peak_time = 0.0
+	for i in range(N//2,acc_z.shape[0]-N//2):
+		peak_time = findPeakTime(acc_z[i-N//2:i+N//2],0.5)
+		if peak_time == None:
+			continue
+		elif i==N//2:
+			peak_idx = np.where(acc_z[:,0] == peak_time)[0][0]
+			peak_time_list.append(peak_time)
+			peak_idx_list.append(peak_idx)
+			pre_peak_time = peak_time
+		else:
+			if peak_time != pre_peak_time:
+				peak_idx = np.where(acc_z[:,0] == peak_time)[0][0]
+				peak_time_list.append(peak_time)
+				peak_idx_list.append(peak_idx)
+				pre_peak_time = peak_time 
+
+	return peak_time_list,peak_idx_list
+		
+	
+
+'''
 	foot_step_idx_list = []
 	for i in range(winsize//2,acc_z.shape[0]-winsize//2):
 		win_array = acc_z[i:i+winsize,:]
 		min_idx = np.argmin(win_array[:,1])
 		if min_idx ==	winsize//2 and win_array[min_idx,1] < -1.0 :
 			foot_step_idx_list.append(win_array[min_idx,0])
+'''
 	
-	return foot_step_idx_list
+	#return foot_step_idx_list
 
 
 	
@@ -146,14 +178,15 @@ def main():
 	acc_step[:,1] = np.convolve(acc_hpf,moving_average_filter,mode='same')
 	acc_step[:,0] = acc_gcs[:,0]
 
-	acc_step_clip = acc_step[:,:]
+	acc_step_clip = acc_step[1000:1800,:] #Clip
 
 	step_data_ax.plot(acc_step_clip[:,0],acc_step_clip[:,1])
 
 
-	step_idx = findFootStep(acc_step_clip,50)
+	step_time,step_idx= findFootStep(acc_step_clip,50)
 	print(step_idx)
-	step_data_ax.vlines(x=step_idx, ymin=-3,ymax=3,zorder=100,color='red')
+	#step_data_ax.vlines(x=step_idx, ymin=-3,ymax=3,zorder=100,color='red')
+	step_data_ax.scatter(step_time,acc_step_clip[step_idx,1],color='red')
 
 	raw_data_fig.savefig('raw_data')
 	gcs_data_fig.savefig('gcs_data')
