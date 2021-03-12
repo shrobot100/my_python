@@ -4,10 +4,8 @@ import os
 import sys
 import time
 import copy
-import datetime
 import pandas as pd
 import numpy as np
-import tf
 import math
 import matplotlib
 matplotlib.use('Agg')
@@ -142,15 +140,7 @@ def findFootStep(acc_z,N):
 	fusion_idx_set = peak_idx_set & p2p_idx_set & slope_idx_set
 	step_idx_list = list(fusion_idx_set)
 	
-	
-
 	return step_idx_list
-		
-	
-
-
-	
-	
 		
 	
 def main():
@@ -168,9 +158,21 @@ def main():
 	step_data_ax = step_data_fig.add_subplot(1,1,1)
 
 	args = sys.argv
-	assert len(args)>=2,'you must specify the arugument'
-	#filename = os.path.normpath(os.path.join(os.getcwd(),args[1]))
+
+	if len(args)<=1 :
+		print(args)
+		print('you must specify the arugument')
+		print('ex: filename start_idx end_idx')
+		return
 	filename = sys.argv[1]
+	if len(args)>=3:
+		start_idx = int(sys.argv[2])
+	else:
+		start_idx = 0
+	if len(args)>=4:
+		end_idx = int(sys.argv[3])
+	else:
+		end_idx = None
 	print('loading' + filename)
 	raw_data = readAccelFromCSV(filename)
 	raw_data_timescale = timestampFromStartTime(raw_data)
@@ -190,10 +192,16 @@ def main():
 	print(math.degrees(rpy[1]))
 
 	rot = getRotationMatrix(rpy[0],rpy[1],0.0)
-	acc_gcs = np.zeros_like(acc_calib)
-	acc_gcs[:,0] = acc_calib[:,0] #タイムスタンプ代入
-	for i in range(acc_calib.shape[0]):
-		acc_gcs[i,1:4] = np.dot(rot,acc_calib[i,1:4].T)
+
+	if end_idx == None:
+		acc_calib_sliced = acc_calib[start_idx:,:]
+	else:
+		acc_calib_sliced = acc_calib[start_idx:end_idx,:]
+
+	acc_gcs = np.zeros_like(acc_calib_sliced)
+	acc_gcs[:,0] = acc_calib_sliced[:,0] #タイムスタンプ代入
+	for i in range(acc_calib_sliced.shape[0]):
+		acc_gcs[i,1:4] = np.dot(rot,acc_calib_sliced[i,1:4].T)
 
 	gcs_data_ax.plot(acc_gcs[:,0],acc_gcs[:,1],label='x')
 	gcs_data_ax.plot(acc_gcs[:,0],acc_gcs[:,2],label='y')
@@ -215,15 +223,16 @@ def main():
 	acc_step[:,1] = np.convolve(acc_hpf,moving_average_filter,mode='same')
 	acc_step[:,0] = acc_gcs[:,0]
 
-	acc_step_clip = acc_step[1000:1800,:] #Clip
 
-	step_data_ax.plot(acc_step_clip[:,0],acc_step_clip[:,1])
+	step_data_ax.plot(acc_step[:,0],acc_step[:,1])
 
 
-	step_idx= findFootStep(acc_step_clip,50)
+	step_idx= findFootStep(acc_step,50)
+	print('step index')
 	print(step_idx)
+	print('total step:',len(step_idx))
 	#step_data_ax.vlines(x=step_time, ymin=-3,ymax=3,zorder=100,color='red')
-	step_data_ax.scatter(acc_step_clip[step_idx,0],acc_step_clip[step_idx,1],color='red')
+	step_data_ax.scatter(acc_step[step_idx,0],acc_step[step_idx,1],color='red')
 
 	raw_data_fig.savefig('raw_data')
 	gcs_data_fig.savefig('gcs_data')
@@ -233,8 +242,6 @@ def main():
 	
 	
 
-	acc_raw_array = []
-	time_array = []
 
 
 
