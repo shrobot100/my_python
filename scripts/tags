@@ -1,0 +1,154 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ClusteringFromTwoFrame	SLAMcluster.py	/^def ClusteringFromTwoFrame(odom1_rel,odom2_rel,begin,threshold):$/;"	f
+Images_C	random_forest.py	/^class Images_C:$/;"	c
+ImuCallback	pdr.py	/^	def ImuCallback(self,data):$/;"	m	class:Node
+MagneticFieldCallback	pdr.py	/^	def MagneticFieldCallback(self,data):$/;"	m	class:Node
+Node	pdr.py	/^class Node:$/;"	c
+Odometry_C	SLAMcluster.py	/^class Odometry_C:$/;"	c
+Odometry_C	random_forest.py	/^class Odometry_C:$/;"	c
+Odometry_C	random_forest_relativePos.py	/^class Odometry_C:$/;"	c
+Pose_C	SLAMcluster.py	/^class Pose_C:$/;"	c
+Pose_C	random_forest.py	/^class Pose_C:$/;"	c
+Pose_C	random_forest_relativePos.py	/^class Pose_C:$/;"	c
+__init__	SLAMcluster.py	/^	def __init__(self,filename=None,label=None):$/;"	m	class:Odometry_C
+__init__	SLAMcluster.py	/^	def __init__(self,timestamp,pos,orientation):$/;"	m	class:Pose_C
+__init__	pdr.py	/^	def __init__(self):$/;"	m	class:Node
+__init__	pdr.py	/^	def __init__(self):$/;"	m	class:footDetection
+__init__	pdr.py	/^	def __init__(self):$/;"	m	class:footLengthEstimator
+__init__	random_forest.py	/^	def __init__(self):$/;"	m	class:Images_C
+__init__	random_forest.py	/^	def __init__(self):$/;"	m	class:Odometry_C
+__init__	random_forest.py	/^	def __init__(self,timestamp,pos,orientation):$/;"	m	class:Pose_C
+__init__	random_forest_relativePos.py	/^	def __init__(self):$/;"	m	class:Odometry_C
+__init__	random_forest_relativePos.py	/^	def __init__(self,timestamp,pos,orientation):$/;"	m	class:Pose_C
+abs_test_predict_odom	random_forest_relativePos.py	/^	abs_test_predict_odom = test_predict_odom.getRelativeOdomInv()$/;"	v
+abs_train_predict_odom	random_forest_relativePos.py	/^	abs_train_predict_odom = train_predict_odom.getRelativeOdomInv()$/;"	v
+acc_calib_buf	pdr.py	/^acc_calib_buf = []$/;"	v
+acc_calib_buf_size	pdr.py	/^acc_calib_buf_size = 100$/;"	v
+analysis	SLAMcluster.py	/^def analysis(odom_list):$/;"	f
+ax	random_forest.py	/^ax = fig.add_subplot(211,aspect="equal")$/;"	v
+ax	random_forest_relativePos.py	/^ax = fig.add_subplot(211,aspect="equal")$/;"	v
+ax2	random_forest.py	/^ax2 = fig.add_subplot(212,aspect="equal")$/;"	v
+ax2	random_forest_relativePos.py	/^ax2 = fig.add_subplot(212,aspect="equal")$/;"	v
+calCosSim	SLAMcluster.py	/^def calCosSim(v1,v2):$/;"	f
+calDiffVectorMap	SLAMcluster.py	/^def calDiffVectorMap(odom1,odom2,k,d_n,N):$/;"	f
+calDiffVectorMap_v2	SLAMcluster.py	/^def calDiffVectorMap_v2(odom1,odom2,win_distance,d_n,N):$/;"	f
+calEllipse	SLAMcluster.py	/^def calEllipse(mean,cov):$/;"	f
+calMaxSpeed	SLAMcluster.py	/^	def calMaxSpeed(self,window):$/;"	m	class:Odometry_C
+calMovingAverage	pdr.py	/^def calMovingAverage(data,win_size):$/;"	f
+calStepAccel	pdr.py	/^def calStepAccel(accel_z,winsize):$/;"	f
+checkDeltaTime	SLAMcluster.py	/^def checkDeltaTime(odom1,odom2):$/;"	f
+compareTwoOdom	SLAMcluster.py	/^def compareTwoOdom(odom1,odom2,base_filename):$/;"	f
+extract	SLAMcluster.py	/^	def extract(self,init_time,th_time):$/;"	m	class:Odometry_C
+extract	random_forest.py	/^	def extract(self,init_time,th_time):$/;"	m	class:Images_C
+extract	random_forest.py	/^	def extract(self,init_time,th_time):$/;"	m	class:Odometry_C
+extract	random_forest_relativePos.py	/^	def extract(self,init_time,th_time):$/;"	m	class:Odometry_C
+extractFromTimeList	SLAMcluster.py	/^	def extractFromTimeList(self,time_list):$/;"	m	class:Odometry_C
+extractFromTimeList	random_forest.py	/^	def extractFromTimeList(self,time_list):$/;"	m	class:Odometry_C
+extractFromTimeList	random_forest_relativePos.py	/^	def extractFromTimeList(self,time_list):$/;"	m	class:Odometry_C
+f	image_save.py	/^f = open('timestamp.csv','w')$/;"	v
+fig	random_forest.py	/^fig = plt.figure()$/;"	v
+fig	random_forest_relativePos.py	/^fig = plt.figure()$/;"	v
+filename	image_save.py	/^	filename = 'zed' + str(i) + '.jpg'$/;"	v
+findFootStep	pdr_offline.py	/^def findFootStep(acc_z,N):$/;"	f
+findPeak2PeakTime	pdr_offline.py	/^def findPeak2PeakTime(acc_z,acc_pp,N):$/;"	f
+findPeakTime	pdr_offline.py	/^def findPeakTime(acc_z,acc_peak,N):$/;"	f
+findSlopeTime	pdr_offline.py	/^def findSlopeTime(acc_z,N):$/;"	f
+footDetection	pdr.py	/^class footDetection:$/;"	c
+footLengthEstimator	pdr.py	/^class footLengthEstimator:$/;"	c
+getName	SLAMcluster.py	/^	def getName(self):$/;"	m	class:Odometry_C
+getName	random_forest.py	/^	def getName(self):$/;"	m	class:Odometry_C
+getName	random_forest_relativePos.py	/^	def getName(self):$/;"	m	class:Odometry_C
+getOrientation	SLAMcluster.py	/^	def getOrientation(self):$/;"	m	class:Pose_C
+getOrientation	pdr_offline.py	/^def getOrientation(mat,window):$/;"	f
+getOrientation	random_forest.py	/^	def getOrientation(self):$/;"	m	class:Pose_C
+getOrientation	random_forest_relativePos.py	/^	def getOrientation(self):$/;"	m	class:Pose_C
+getPos	SLAMcluster.py	/^	def getPos(self):$/;"	m	class:Pose_C
+getPos	random_forest.py	/^	def getPos(self):$/;"	m	class:Pose_C
+getPos	random_forest_relativePos.py	/^	def getPos(self):$/;"	m	class:Pose_C
+getRelativeOdom	SLAMcluster.py	/^	def getRelativeOdom(self):$/;"	m	class:Odometry_C
+getRelativeOdom	random_forest.py	/^	def getRelativeOdom(self):$/;"	m	class:Odometry_C
+getRelativeOdom	random_forest_relativePos.py	/^	def getRelativeOdom(self):$/;"	m	class:Odometry_C
+getRelativeOdomInv	SLAMcluster.py	/^	def getRelativeOdomInv(self):$/;"	m	class:Odometry_C
+getRelativeOdomInv	random_forest_relativePos.py	/^	def getRelativeOdomInv(self):$/;"	m	class:Odometry_C
+getRelativePose	SLAMcluster.py	/^	def getRelativePose(self,origin_pose):$/;"	m	class:Pose_C
+getRelativePose	random_forest.py	/^	def getRelativePose(self,origin_pose):$/;"	m	class:Pose_C
+getRelativePose	random_forest_relativePos.py	/^	def getRelativePose(self,origin_pose):$/;"	m	class:Pose_C
+getRelativePoseInv	SLAMcluster.py	/^	def getRelativePoseInv(self,origin_pose):$/;"	m	class:Pose_C
+getRelativePoseInv	random_forest_relativePos.py	/^	def getRelativePoseInv(self,origin_pose):$/;"	m	class:Pose_C
+getRotationMatrix	pdr.py	/^def getRotationMatrix(roll,pitch,yaw):$/;"	f
+getRotationMatrix	pdr_offline.py	/^def getRotationMatrix(roll,pitch,yaw):$/;"	f
+getTime	SLAMcluster.py	/^	def getTime(self):$/;"	m	class:Pose_C
+getTime	random_forest.py	/^	def getTime(self):$/;"	m	class:Pose_C
+getTime	random_forest_relativePos.py	/^	def getTime(self):$/;"	m	class:Pose_C
+getTimeStamps	SLAMcluster.py	/^	def getTimeStamps(self):$/;"	m	class:Odometry_C
+getTimeStamps	random_forest.py	/^	def getTimeStamps(self):$/;"	m	class:Odometry_C
+getTimeStamps	random_forest_relativePos.py	/^	def getTimeStamps(self):$/;"	m	class:Odometry_C
+handleRotation	pdr.py	/^	def handleRotation(self,req):$/;"	m	class:Node
+i	image_save.py	/^	i = i+1$/;"	v
+i	image_save.py	/^i = 0$/;"	v
+images	image_save.py	/^images = [];$/;"	v
+info	SLAMcluster.py	/^	def info(self):$/;"	m	class:Pose_C
+info	random_forest.py	/^	def info(self):$/;"	m	class:Pose_C
+info	random_forest_relativePos.py	/^	def info(self):$/;"	m	class:Pose_C
+length	SLAMcluster.py	/^	def length(self):$/;"	m	class:Odometry_C
+length	random_forest.py	/^	def length(self):$/;"	m	class:Odometry_C
+length	random_forest_relativePos.py	/^	def length(self):$/;"	m	class:Odometry_C
+load	SLAMcluster.py	/^	def load(self,filename):$/;"	m	class:Odometry_C
+load	random_forest.py	/^	def load(self,filename):$/;"	m	class:Odometry_C
+load	random_forest.py	/^	def load(self,filepath,topic_name):$/;"	m	class:Images_C
+load	random_forest_relativePos.py	/^	def load(self,filename):$/;"	m	class:Odometry_C
+localClustering	SLAMcluster.py	/^def localClustering(odom1_rel,odom2_rel,begin,end,threshold):$/;"	f
+lowPassFilter	pdr.py	/^def lowPassFilter(data,pre_data,alpha):$/;"	f
+lowPassFilter	pdr_offline.py	/^def lowPassFilter(mat,alpha): #一次元配列$/;"	f
+main	SLAMcluster.py	/^def main():$/;"	f
+main	pdr.py	/^def main():$/;"	f
+main	pdr_offline.py	/^def main():$/;"	f
+main	random_forest.py	/^def main():$/;"	f
+main	random_forest_relativePos.py	/^def main():$/;"	f
+maxDeltaTime	SLAMcluster.py	/^	def maxDeltaTime(self):$/;"	m	class:Odometry_C
+meanDeltaTime	SLAMcluster.py	/^	def meanDeltaTime(self):$/;"	m	class:Odometry_C
+np_arr	image_save.py	/^			np_arr = np.fromstring(msg.data, np.uint8)$/;"	v
+plot	SLAMcluster.py	/^	def plot(self,ax):$/;"	m	class:Odometry_C
+plot	random_forest.py	/^	def plot(self,fignum):$/;"	m	class:Odometry_C
+plot	random_forest_relativePos.py	/^	def plot(self,fignum):$/;"	m	class:Odometry_C
+plotKankeiVector	SLAMcluster.py	/^def plotKankeiVector(kankeivec,mean,cov,title,filename):$/;"	f
+pose	random_forest_relativePos.py	/^		pose = Pose_C(0.0,raw_data[0:3],raw_data[3:])$/;"	v
+raw_data	random_forest_relativePos.py	/^		raw_data = y_test_pred[i]$/;"	v
+raw_data	random_forest_relativePos.py	/^		raw_data = y_train_pred[i]$/;"	v
+raw_image	image_save.py	/^			raw_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)$/;"	v
+readAccelFromCSV	pdr_offline.py	/^def readAccelFromCSV(filename):$/;"	f
+removeOffset	pdr_offline.py	/^def removeOffset(mat,offset_x,offset_y,offset_z):$/;"	f
+rotate	SLAMcluster.py	/^	def rotate(self,roll,pitch,yaw):$/;"	m	class:Odometry_C
+rotate	random_forest.py	/^	def rotate(self,roll,pitch,yaw):$/;"	m	class:Odometry_C
+rotate	random_forest_relativePos.py	/^	def rotate(self,roll,pitch,yaw):$/;"	m	class:Odometry_C
+run	pdr.py	/^	def run(self):$/;"	m	class:Node
+run	pdr.py	/^	def run(self):$/;"	m	class:footLengthEstimator
+run	pdr.py	/^	def run(self,accel_z,winsize):$/;"	m	class:footDetection
+setOrientation	SLAMcluster.py	/^	def setOrientation(self,in_ori):$/;"	m	class:Pose_C
+setOrientation	random_forest.py	/^	def setOrientation(self,in_ori):$/;"	m	class:Pose_C
+setOrientation	random_forest_relativePos.py	/^	def setOrientation(self,in_ori):$/;"	m	class:Pose_C
+setPos	SLAMcluster.py	/^	def setPos(self,in_pos):$/;"	m	class:Pose_C
+setPos	random_forest.py	/^	def setPos(self,in_pos):$/;"	m	class:Pose_C
+setPos	random_forest_relativePos.py	/^	def setPos(self,in_pos):$/;"	m	class:Pose_C
+setScale	SLAMcluster.py	/^	def setScale(self,scale):$/;"	m	class:Odometry_C
+setScale	random_forest.py	/^	def setScale(self,scale):$/;"	m	class:Odometry_C
+setScale	random_forest_relativePos.py	/^	def setScale(self,scale):$/;"	m	class:Odometry_C
+setTime	SLAMcluster.py	/^	def setTime(self,time):$/;"	m	class:Pose_C
+size	SLAMcluster.py	/^	def size(self):$/;"	m	class:Odometry_C
+size	random_forest.py	/^	def size(self):$/;"	m	class:Odometry_C
+size	random_forest_relativePos.py	/^	def size(self):$/;"	m	class:Odometry_C
+split	SLAMcluster.py	/^	def split(self,begin,end):$/;"	m	class:Odometry_C
+split	random_forest.py	/^	def split(self,begin,end):$/;"	m	class:Odometry_C
+split	random_forest_relativePos.py	/^	def split(self,begin,end):$/;"	m	class:Odometry_C
+test_predict_odom	random_forest_relativePos.py	/^	test_predict_odom = Odometry_C()$/;"	v
+time	random_forest_relativePos.py	/^	time = datetime.datetime.now()$/;"	v
+timestampFromStartTime	pdr_offline.py	/^def timestampFromStartTime(mat):$/;"	f
+timestamps	image_save.py	/^timestamps = [];$/;"	v
+train_predict_odom	random_forest_relativePos.py	/^	train_predict_odom = Odometry_C()$/;"	v
+transform	SLAMcluster.py	/^def transform(x_list,y_list,theta):$/;"	f
+transform2AbusoluteOdom	random_forest.py	/^	def transform2AbusoluteOdom(self):$/;"	m	class:Odometry_C

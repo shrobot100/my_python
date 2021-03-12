@@ -94,21 +94,27 @@ def findPeak2PeakTime(acc_z,acc_pp,N):
 		if max_delta1 > acc_pp and max_delta2 > acc_pp:
 			p2p_idx_list.append(t)
 
-
 	return p2p_idx_list
 
-
-			
-
-		
+def findSlopeTime(acc_z,N):
+	slope_idx_list = []
+	for t in range(N//2,acc_z.shape[0]-N//2):
+		sum_var1 = 0.0
+		sum_var2 = 0.0
+		for i in range(t-N//2,t-1):
+			sum_var1 += acc_z[i+1,1] - acc_z[i,1]
+		for i in range(t+1,t+N//2):
+			sum_var2 += acc_z[i,1] - acc_z[i-1,1]
+		if sum_var1 > 0 and sum_var2 < 0:
+			slope_idx_list.append(t)
 	
+	return slope_idx_list
 
 def findFootStep(acc_z,N):
 	#find peak
 	peak_idx_list = findPeakTime(acc_z,0.5,N)
 	p2p_idx_list = findPeak2PeakTime(acc_z,1.0,N)
-	print('p2p')
-	print(p2p_idx_list)
+	slope_idx_list = findSlopeTime(acc_z,N)
 
 	#Plot Peak
 	peak_fig = plt.figure()
@@ -123,8 +129,18 @@ def findFootStep(acc_z,N):
 	p2p_ax.scatter(acc_z[p2p_idx_list,0],acc_z[p2p_idx_list,1],color='red')
 	p2p_fig.savefig('peak2peak')
 
+	#Plot Slope 
+	slope_fig = plt.figure()
+	slope_ax = slope_fig.add_subplot(1,1,1)
+	slope_ax.plot(acc_z[:,0],acc_z[:,1])
+	slope_ax.scatter(acc_z[slope_idx_list,0],acc_z[slope_idx_list,1],color='red')
+	slope_fig.savefig('slope')
 	#FUSION
-	step_idx_list = list(set(peak_idx_list) & set(p2p_idx_list))
+	peak_idx_set = set(peak_idx_list)
+	p2p_idx_set = set(p2p_idx_list)
+	slope_idx_set = set(slope_idx_list)
+	fusion_idx_set = peak_idx_set & p2p_idx_set & slope_idx_set
+	step_idx_list = list(fusion_idx_set)
 	
 	
 
