@@ -139,6 +139,8 @@ def findFootStep(acc_z,N):
 	slope_idx_set = set(slope_idx_list)
 	fusion_idx_set = peak_idx_set & p2p_idx_set & slope_idx_set
 	step_idx_list = list(fusion_idx_set)
+
+	step_idx_list.sort()
 	
 	return step_idx_list
 		
