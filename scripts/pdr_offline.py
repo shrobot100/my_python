@@ -68,16 +68,6 @@ def lowPassFilter(mat,alpha): #一次元配列
 		ret[i] = ret[i-1]*alpha + (1-alpha)*mat[i]
 
 	return ret
-'''
-def findPeakTime(win_array,acc_peak):
-
-	max_idx = np.argmax(win_array[:,1]) #窓の中で最大の値をとるインデックス取得
-	print(max_idx)
-	if(win_array[max_idx,1] > acc_peak):
-		return win_array[max_idx,0]
-	else:
-		return None
-'''
 
 def findPeakTime(acc_z,acc_peak,N):
 	#find peak
@@ -91,45 +81,56 @@ def findPeakTime(acc_z,acc_peak,N):
 			peak_idx_list.append(max_idx)
 	return peak_idx_list
 	
-	
+def findPeak2PeakTime(acc_z,acc_pp,N):
+	p2p_idx_list = []
+	for t in range(N//2,acc_z.shape[0]-N//2):
+		delta1 = []
+		delta2 = []
+		for i in range(1,N//2):
+			delta1.append(acc_z[t,1] - acc_z[t+i,1])
+			delta2.append(acc_z[t,1] - acc_z[t-i,1])
+		max_delta1 = max(delta1)
+		max_delta2 = max(delta2)
+		if max_delta1 > acc_pp and max_delta2 > acc_pp:
+			p2p_idx_list.append(t)
 
-def findFootStep(acc_z,N):
-	peak_time_list = []
-	#find peak
-	peak_idx_list = findPeakTime(acc_z,0.5,N)
-	'''
-	pre_peak_time = 0.0
-	for i in range(N//2,acc_z.shape[0]-N//2):
-		peak_time = findPeakTime(acc_z[i-N//2:i+N//2],0.5)
-		if peak_time == None:
-			continue
-		elif i==N//2: #初回
-			peak_idx = np.where(acc_z[:,0] == peak_time)[0][0]
-			peak_time_list.append(peak_time)
-			peak_idx_list.append(peak_idx)
-			pre_peak_time = peak_time
-		else:
-			if peak_time != pre_peak_time: #前と違うピークを検出したら
-				peak_idx = np.where(acc_z[:,0] == peak_time)[0][0]
-				peak_time_list.append(peak_time)
-				peak_idx_list.append(peak_idx)
-				pre_peak_time = peak_time 
-		'''
 
-	return peak_idx_list
+	return p2p_idx_list
+
+
+			
+
 		
 	
 
-'''
-	foot_step_idx_list = []
-	for i in range(winsize//2,acc_z.shape[0]-winsize//2):
-		win_array = acc_z[i:i+winsize,:]
-		min_idx = np.argmin(win_array[:,1])
-		if min_idx ==	winsize//2 and win_array[min_idx,1] < -1.0 :
-			foot_step_idx_list.append(win_array[min_idx,0])
-'''
+def findFootStep(acc_z,N):
+	#find peak
+	peak_idx_list = findPeakTime(acc_z,0.5,N)
+	p2p_idx_list = findPeak2PeakTime(acc_z,1.0,N)
+	print('p2p')
+	print(p2p_idx_list)
+
+	#Plot Peak
+	peak_fig = plt.figure()
+	peak_ax = peak_fig.add_subplot(1,1,1)
+	peak_ax.plot(acc_z[:,0],acc_z[:,1])
+	peak_ax.scatter(acc_z[peak_idx_list,0],acc_z[peak_idx_list,1],color='red')
+	peak_fig.savefig('peak')
+	#Plot Peak2Peak
+	p2p_fig = plt.figure()
+	p2p_ax = p2p_fig.add_subplot(1,1,1)
+	p2p_ax.plot(acc_z[:,0],acc_z[:,1])
+	p2p_ax.scatter(acc_z[p2p_idx_list,0],acc_z[p2p_idx_list,1],color='red')
+	p2p_fig.savefig('peak2peak')
+
+	#FUSION
+	step_idx_list = list(set(peak_idx_list) & set(p2p_idx_list))
 	
-	#return foot_step_idx_list
+	
+
+	return step_idx_list
+		
+	
 
 
 	
