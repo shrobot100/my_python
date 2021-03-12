@@ -68,35 +68,55 @@ def lowPassFilter(mat,alpha): #一次元配列
 		ret[i] = ret[i-1]*alpha + (1-alpha)*mat[i]
 
 	return ret
+'''
 def findPeakTime(win_array,acc_peak):
+
 	max_idx = np.argmax(win_array[:,1]) #窓の中で最大の値をとるインデックス取得
+	print(max_idx)
 	if(win_array[max_idx,1] > acc_peak):
 		return win_array[max_idx,0]
+	else:
+		return None
+'''
+
+def findPeakTime(acc_z,acc_peak,N):
+	#find peak
+	peak_idx_list = []
+	for i in range(N//2,acc_z.shape[0]-N//2):
+		offset = np.argmax(acc_z[i-N//2:i+N//2,1])
+		max_idx = i-N//2 + offset
+		if offset != N//2 or acc_z[max_idx,1] < acc_peak: #中央値でなない　or 閾値より小さい
+			continue
+		else:
+			peak_idx_list.append(max_idx)
+	return peak_idx_list
+	
 	
 
-def findFootStep(acc_z,winsize):
-	N = 100 #比較するサンプル数
+def findFootStep(acc_z,N):
 	peak_time_list = []
-	peak_idx_list = []
 	#find peak
+	peak_idx_list = findPeakTime(acc_z,0.5,N)
+	'''
 	pre_peak_time = 0.0
 	for i in range(N//2,acc_z.shape[0]-N//2):
 		peak_time = findPeakTime(acc_z[i-N//2:i+N//2],0.5)
 		if peak_time == None:
 			continue
-		elif i==N//2:
+		elif i==N//2: #初回
 			peak_idx = np.where(acc_z[:,0] == peak_time)[0][0]
 			peak_time_list.append(peak_time)
 			peak_idx_list.append(peak_idx)
 			pre_peak_time = peak_time
 		else:
-			if peak_time != pre_peak_time:
+			if peak_time != pre_peak_time: #前と違うピークを検出したら
 				peak_idx = np.where(acc_z[:,0] == peak_time)[0][0]
 				peak_time_list.append(peak_time)
 				peak_idx_list.append(peak_idx)
 				pre_peak_time = peak_time 
+		'''
 
-	return peak_time_list,peak_idx_list
+	return peak_idx_list
 		
 	
 
@@ -172,7 +192,7 @@ def main():
 	acc_hpf = acc_gcs[:,3] - acc_gravity[:]
 	
 	acc_step = np.zeros((acc_hpf.shape[0],2))
-	win_size = 10
+	win_size = 9
 	moving_average_filter = np.ones(win_size) / win_size
 	
 	acc_step[:,1] = np.convolve(acc_hpf,moving_average_filter,mode='same')
@@ -183,10 +203,10 @@ def main():
 	step_data_ax.plot(acc_step_clip[:,0],acc_step_clip[:,1])
 
 
-	step_time,step_idx= findFootStep(acc_step_clip,50)
+	step_idx= findFootStep(acc_step_clip,50)
 	print(step_idx)
-	#step_data_ax.vlines(x=step_idx, ymin=-3,ymax=3,zorder=100,color='red')
-	step_data_ax.scatter(step_time,acc_step_clip[step_idx,1],color='red')
+	#step_data_ax.vlines(x=step_time, ymin=-3,ymax=3,zorder=100,color='red')
+	step_data_ax.scatter(acc_step_clip[step_idx,0],acc_step_clip[step_idx,1],color='red')
 
 	raw_data_fig.savefig('raw_data')
 	gcs_data_fig.savefig('gcs_data')
