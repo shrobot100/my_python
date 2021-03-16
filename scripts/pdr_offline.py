@@ -215,8 +215,9 @@ def main():
 
 	gravity_data_ax.plot(acc_gcs[:,0],acc_gravity)
 
-	#重力成分以外を抽出
-	acc_hpf = acc_gcs[:,3] - acc_gravity[:]
+	#重力成分以外を抽出 acc_hpf:一次元配列
+	#acc_hpf = acc_gcs[:,3] - acc_gravity[:]
+	acc_hpf = acc_gravity - np.full_like(acc_gravity,9.8)
 	
 	acc_step = np.zeros((acc_hpf.shape[0],2))
 	win_size = 9
