@@ -143,6 +143,15 @@ def findFootStep(acc_z,N):
 	step_idx_list.sort()
 	
 	return step_idx_list
+
+#積分(台形法)
+def integration(t_list,f_list):
+	ret = 0.0
+	for i in range(1,len(t_list)):
+		dt = t_list[i] - t_list[i-1]
+		area = (f_list[i-1] + f_list[i])*dt/2.0
+		ret += area
+	return ret
 		
 	
 def main():
