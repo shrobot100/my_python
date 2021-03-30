@@ -20,12 +20,16 @@ def readAccelFromCSV(filename):
 
 	return df_new[['stamp','x','y','z']].values
 
+def readGNSSVeloFromCSV(filename):
+	df = pd.read_csv(filename)
+	df_new = df.rename(columns={'field.header.stamp':'stamp','field.accel.accel.linear.x':'x','field.accel.accel.linear.y':'y','field.accel.accel.linear.z':'z'})
+	return df_new[['stamp','x','y','z']].values
 
-def timestampFromStartTime(mat):
+
+def timestampFromStartTime(mat,origin_time):
 	div_num = 1000000000.0
-	origin = mat[0][0] / div_num
 	for i in range(mat.shape[0]):
-		mat[i][0] = mat[i][0]/div_num -origin		
+		mat[i][0] = (mat[i][0] - origin_time) / div_num
 
 	return mat
 
@@ -152,7 +156,41 @@ def integration(t_list,f_list):
 		area = (f_list[i-1] + f_list[i])*dt/2.0
 		ret += area
 	return ret
-		
+
+
+def calFootLength(acc_step,step_idx,K):
+	ret = []
+	acc_max = np.amax(acc_step[step_idx[0]:,1])
+	acc_min = np.amin(acc_step[step_idx[0]:,1])
+	ret.append(K*(acc_max-acc_min)**(1/4))
+	for i in range(len(step_idx)-1):
+		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
+		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
+		ret.append(K*(acc_max-acc_min)**(1/4))
+	
+	return ret
+
+def showFootVelo(acc_step,step_idx,K):
+	acc_max = np.amax(acc_step[step_idx[0]:,1])
+	acc_min = np.amin(acc_step[step_idx[0]:,1])
+	length = K*(acc_max-acc_min)**(1/4)
+	for i in range(len(step_idx)-1):
+		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
+		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
+		length = K*(acc_max-acc_min)**(1/4)
+		velo = length / (acc_step[step_idx[i+1],0] - acc_step[step_idx[i],0])
+		print(velo)
+	
+def calPrameterK(acc_step,step_idx,velo_data):
+	print()
+
+def velo2Horizon(velo_mat): #速度を合成
+	ret = np.zeros((velo_mat.shape[0],2))
+	ret[:,0] = velo_mat[:,0] #copy timestamp
+	for i in range(velo_mat.shape[0]):
+		ret[i,1] = math.sqrt(velo_mat[i,1]**2+velo_mat[i,2]**2)
+	
+	return ret
 	
 def main():
 	#Matplotlib
@@ -170,24 +208,37 @@ def main():
 
 	args = sys.argv
 
-	if len(args)<=1 :
+	if len(args)<=2 :
 		print(args)
 		print('you must specify the arugument')
 		print('ex: filename start_idx end_idx')
 		return
-	filename = sys.argv[1]
-	if len(args)>=3:
-		start_idx = int(sys.argv[2])
+	filename_imu = sys.argv[1]
+	filename_velo = sys.argv[2]
+	if len(args)>=4:
+		start_idx = int(sys.argv[3])
 	else:
 		start_idx = 0
 	if len(args)>=4:
-		end_idx = int(sys.argv[3])
+		end_idx = int(sys.argv[4])
 	else:
 		end_idx = None
-	print('loading' + filename)
-	raw_data = readAccelFromCSV(filename)
-	raw_data_timescale = timestampFromStartTime(raw_data)
-	acc_calib = removeOffset(raw_data_timescale,0.0,0.0,0.0)
+	print('loading' + filename_imu)
+	
+
+
+	raw_imu_data = readAccelFromCSV(filename_imu)
+	start_time = raw_imu_data[0,0]
+	raw_imu_data_timescale = timestampFromStartTime(raw_imu_data,start_time)
+	acc_calib = removeOffset(raw_imu_data_timescale,0.0,0.0,0.0)
+
+	raw_velo_data = readGNSSVeloFromCSV(filename_velo)
+	velo_data = timestampFromStartTime(raw_velo_data,start_time)
+	velo_horizon_data = velo2Horizon(velo_data)
+	print(velo_horizon_data)
+
+
+
 
 	#キャリブレーション後のデータをプロット
 	raw_data_ax.plot(acc_calib[:,0],acc_calib[:,1],label='x')
@@ -245,6 +296,8 @@ def main():
 	print('total step:',len(step_idx))
 	#step_data_ax.vlines(x=step_time, ymin=-3,ymax=3,zorder=100,color='red')
 	step_data_ax.scatter(acc_step[step_idx,0],acc_step[step_idx,1],color='red')
+	#length = calFootLength(acc_step,step_idx,0.52)
+	showFootVelo(acc_step,step_idx,0.52)
 
 	raw_data_fig.savefig('raw_data')
 	gcs_data_fig.savefig('gcs_data')

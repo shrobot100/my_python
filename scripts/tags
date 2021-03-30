@@ -38,8 +38,10 @@ calCosSim	SLAMcluster.py	/^def calCosSim(v1,v2):$/;"	f
 calDiffVectorMap	SLAMcluster.py	/^def calDiffVectorMap(odom1,odom2,k,d_n,N):$/;"	f
 calDiffVectorMap_v2	SLAMcluster.py	/^def calDiffVectorMap_v2(odom1,odom2,win_distance,d_n,N):$/;"	f
 calEllipse	SLAMcluster.py	/^def calEllipse(mean,cov):$/;"	f
+calFootLength	pdr_offline.py	/^def calFootLength(acc_step,step_idx,K):$/;"	f
 calMaxSpeed	SLAMcluster.py	/^	def calMaxSpeed(self,window):$/;"	m	class:Odometry_C
 calMovingAverage	pdr.py	/^def calMovingAverage(data,win_size):$/;"	f
+calPrameterK	pdr_offline.py	/^def calPrameterK(acc_step,step_idx,velo_data):$/;"	f
 calStepAccel	pdr.py	/^def calStepAccel(accel_z,winsize):$/;"	f
 checkDeltaTime	SLAMcluster.py	/^def checkDeltaTime(odom1,odom2):$/;"	f
 compareTwoOdom	SLAMcluster.py	/^def compareTwoOdom(odom1,odom2,base_filename):$/;"	f
@@ -95,6 +97,7 @@ images	image_save.py	/^images = [];$/;"	v
 info	SLAMcluster.py	/^	def info(self):$/;"	m	class:Pose_C
 info	random_forest.py	/^	def info(self):$/;"	m	class:Pose_C
 info	random_forest_relativePos.py	/^	def info(self):$/;"	m	class:Pose_C
+integration	pdr_offline.py	/^def integration(t_list,f_list):$/;"	f
 length	SLAMcluster.py	/^	def length(self):$/;"	m	class:Odometry_C
 length	random_forest.py	/^	def length(self):$/;"	m	class:Odometry_C
 length	random_forest_relativePos.py	/^	def length(self):$/;"	m	class:Odometry_C
@@ -122,6 +125,7 @@ raw_data	random_forest_relativePos.py	/^		raw_data = y_test_pred[i]$/;"	v
 raw_data	random_forest_relativePos.py	/^		raw_data = y_train_pred[i]$/;"	v
 raw_image	image_save.py	/^			raw_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)$/;"	v
 readAccelFromCSV	pdr_offline.py	/^def readAccelFromCSV(filename):$/;"	f
+readGNSSVeloFromCSV	pdr_offline.py	/^def readGNSSVeloFromCSV(filename):$/;"	f
 removeOffset	pdr_offline.py	/^def removeOffset(mat,offset_x,offset_y,offset_z):$/;"	f
 rotate	SLAMcluster.py	/^	def rotate(self,roll,pitch,yaw):$/;"	m	class:Odometry_C
 rotate	random_forest.py	/^	def rotate(self,roll,pitch,yaw):$/;"	m	class:Odometry_C
@@ -147,8 +151,9 @@ split	random_forest.py	/^	def split(self,begin,end):$/;"	m	class:Odometry_C
 split	random_forest_relativePos.py	/^	def split(self,begin,end):$/;"	m	class:Odometry_C
 test_predict_odom	random_forest_relativePos.py	/^	test_predict_odom = Odometry_C()$/;"	v
 time	random_forest_relativePos.py	/^	time = datetime.datetime.now()$/;"	v
-timestampFromStartTime	pdr_offline.py	/^def timestampFromStartTime(mat):$/;"	f
+timestampFromStartTime	pdr_offline.py	/^def timestampFromStartTime(mat,origin_time):$/;"	f
 timestamps	image_save.py	/^timestamps = [];$/;"	v
 train_predict_odom	random_forest_relativePos.py	/^	train_predict_odom = Odometry_C()$/;"	v
 transform	SLAMcluster.py	/^def transform(x_list,y_list,theta):$/;"	f
 transform2AbusoluteOdom	random_forest.py	/^	def transform2AbusoluteOdom(self):$/;"	m	class:Odometry_C
+velo2Horizon	pdr_offline.py	/^def velo2Horizon(velo_mat): #速度を合成$/;"	f
