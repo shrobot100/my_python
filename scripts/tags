@@ -143,6 +143,7 @@ setScale	SLAMcluster.py	/^	def setScale(self,scale):$/;"	m	class:Odometry_C
 setScale	random_forest.py	/^	def setScale(self,scale):$/;"	m	class:Odometry_C
 setScale	random_forest_relativePos.py	/^	def setScale(self,scale):$/;"	m	class:Odometry_C
 setTime	SLAMcluster.py	/^	def setTime(self,time):$/;"	m	class:Pose_C
+showFootVelo	pdr_offline.py	/^def showFootVelo(acc_step,step_idx,K):$/;"	f
 size	SLAMcluster.py	/^	def size(self):$/;"	m	class:Odometry_C
 size	random_forest.py	/^	def size(self):$/;"	m	class:Odometry_C
 size	random_forest_relativePos.py	/^	def size(self):$/;"	m	class:Odometry_C

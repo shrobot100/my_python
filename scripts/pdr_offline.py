@@ -170,7 +170,9 @@ def calFootLength(acc_step,step_idx,K):
 	
 	return ret
 
-def showFootVelo(acc_step,step_idx,K):
+def calFootVelo(acc_step,step_idx,K):
+	step_num = len(step_idx) #歩数
+	ret = np.zeros((step_num,2))
 	acc_max = np.amax(acc_step[step_idx[0]:,1])
 	acc_min = np.amin(acc_step[step_idx[0]:,1])
 	length = K*(acc_max-acc_min)**(1/4)
@@ -179,7 +181,12 @@ def showFootVelo(acc_step,step_idx,K):
 		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
 		length = K*(acc_max-acc_min)**(1/4)
 		velo = length / (acc_step[step_idx[i+1],0] - acc_step[step_idx[i],0])
-		print(velo)
+
+		timestamp = (acc_step[step_idx[i+1],0] + acc_step[step_idx[i],0])/2
+		ret[i,0] = timestamp
+		ret[i,1] = velo
+
+	return ret
 	
 def calPrameterK(acc_step,step_idx,velo_data):
 	print()
@@ -191,8 +198,13 @@ def velo2Horizon(velo_mat): #速度を合成
 		ret[i,1] = math.sqrt(velo_mat[i,1]**2+velo_mat[i,2]**2)
 	
 	return ret
+
+def timeMatch(acc_step,velo_data)
+	print()
 	
 def main():
+	np.set_printoptions(precision=3)
+	np.set_printoptions(suppress=True)
 	#Matplotlib
 	raw_data_fig = plt.figure()
 	raw_data_ax = raw_data_fig.add_subplot(1,1,1)
@@ -297,7 +309,8 @@ def main():
 	#step_data_ax.vlines(x=step_time, ymin=-3,ymax=3,zorder=100,color='red')
 	step_data_ax.scatter(acc_step[step_idx,0],acc_step[step_idx,1],color='red')
 	#length = calFootLength(acc_step,step_idx,0.52)
-	showFootVelo(acc_step,step_idx,0.52)
+	hoge = calFootVelo(acc_step,step_idx,0.52)
+	print(hoge)
 
 	raw_data_fig.savefig('raw_data')
 	gcs_data_fig.savefig('gcs_data')
