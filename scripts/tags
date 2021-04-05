@@ -39,6 +39,7 @@ calDiffVectorMap	SLAMcluster.py	/^def calDiffVectorMap(odom1,odom2,k,d_n,N):$/;"
 calDiffVectorMap_v2	SLAMcluster.py	/^def calDiffVectorMap_v2(odom1,odom2,win_distance,d_n,N):$/;"	f
 calEllipse	SLAMcluster.py	/^def calEllipse(mean,cov):$/;"	f
 calFootLength	pdr_offline.py	/^def calFootLength(acc_step,step_idx,K):$/;"	f
+calFootVelo	pdr_offline.py	/^def calFootVelo(acc_step,step_idx,K):$/;"	f
 calMaxSpeed	SLAMcluster.py	/^	def calMaxSpeed(self,window):$/;"	m	class:Odometry_C
 calMovingAverage	pdr.py	/^def calMovingAverage(data,win_size):$/;"	f
 calPrameterK	pdr_offline.py	/^def calPrameterK(acc_step,step_idx,velo_data):$/;"	f
@@ -98,6 +99,7 @@ info	SLAMcluster.py	/^	def info(self):$/;"	m	class:Pose_C
 info	random_forest.py	/^	def info(self):$/;"	m	class:Pose_C
 info	random_forest_relativePos.py	/^	def info(self):$/;"	m	class:Pose_C
 integration	pdr_offline.py	/^def integration(t_list,f_list):$/;"	f
+leastSquaresMethod	pdr_offline.py	/^def leastSquaresMethod(x_list,y_list):$/;"	f
 length	SLAMcluster.py	/^	def length(self):$/;"	m	class:Odometry_C
 length	random_forest.py	/^	def length(self):$/;"	m	class:Odometry_C
 length	random_forest_relativePos.py	/^	def length(self):$/;"	m	class:Odometry_C
@@ -113,6 +115,7 @@ main	pdr.py	/^def main():$/;"	f
 main	pdr_offline.py	/^def main():$/;"	f
 main	random_forest.py	/^def main():$/;"	f
 main	random_forest_relativePos.py	/^def main():$/;"	f
+matchTime	pdr_offline.py	/^def matchTime(x,y,max_delay):$/;"	f
 maxDeltaTime	SLAMcluster.py	/^	def maxDeltaTime(self):$/;"	m	class:Odometry_C
 meanDeltaTime	SLAMcluster.py	/^	def meanDeltaTime(self):$/;"	m	class:Odometry_C
 np_arr	image_save.py	/^			np_arr = np.fromstring(msg.data, np.uint8)$/;"	v
@@ -143,7 +146,6 @@ setScale	SLAMcluster.py	/^	def setScale(self,scale):$/;"	m	class:Odometry_C
 setScale	random_forest.py	/^	def setScale(self,scale):$/;"	m	class:Odometry_C
 setScale	random_forest_relativePos.py	/^	def setScale(self,scale):$/;"	m	class:Odometry_C
 setTime	SLAMcluster.py	/^	def setTime(self,time):$/;"	m	class:Pose_C
-showFootVelo	pdr_offline.py	/^def showFootVelo(acc_step,step_idx,K):$/;"	f
 size	SLAMcluster.py	/^	def size(self):$/;"	m	class:Odometry_C
 size	random_forest.py	/^	def size(self):$/;"	m	class:Odometry_C
 size	random_forest_relativePos.py	/^	def size(self):$/;"	m	class:Odometry_C

@@ -158,7 +158,7 @@ def integration(t_list,f_list):
 	return ret
 
 
-def calFootLength(acc_step,step_idx,K):
+def calFootLength(acc_step,step_idx,K,bias):
 	ret = []
 	acc_max = np.amax(acc_step[step_idx[0]:,1])
 	acc_min = np.amin(acc_step[step_idx[0]:,1])
@@ -166,11 +166,11 @@ def calFootLength(acc_step,step_idx,K):
 	for i in range(len(step_idx)-1):
 		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
 		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
-		ret.append(K*(acc_max-acc_min)**(1/4))
+		ret.append(K*(acc_max-acc_min)**(1/4)+bias)
 	
 	return ret
 
-def calFootVelo(acc_step,step_idx,K):
+def calFootVelo(acc_step,step_idx,K,bias):
 	step_num = len(step_idx) #歩数
 	ret = np.zeros((step_num,2))
 	acc_max = np.amax(acc_step[step_idx[0]:,1])
@@ -187,9 +187,93 @@ def calFootVelo(acc_step,step_idx,K):
 		ret[i,1] = velo
 
 	return ret
+
+def leastSquaresMethod(x_list,y_list):
+	x_cov = np.var(x_list)
+	xy_cov = np.cov(np.array([x_list,y_list]))[0,0]
+	print(xy_cov)
+	x_mean = np.mean(x_list)
+	y_mean = np.mean(y_list)
 	
+	slope = xy_cov/x_cov
+	bias = y_mean-slope*x_mean
+
+	return slope,bias
+
+def matchTime(x,y,max_delay):
+	ret = []
+	for i in range(x.shape[0]):
+		target_time = x[i,0]
+		min_time = sys.float_info.max
+		for j in range(y.shape[0]):
+			delta_time = abs(y[j,0] - target_time)
+			if min_time >= delta_time:
+				min_time = delta_time
+				min_idx = j
+			else:
+				if min_time<max_delay:
+					ret.append((i,min_idx))
+				break
+	return ret
+
+
+
+
+
 def calPrameterK(acc_step,step_idx,velo_data):
-	print()
+	step_num = len(step_idx) #歩数
+	x_list = np.zeros((step_num,2))
+	for i in range(len(step_idx)-1):
+		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
+		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
+		tmp = (acc_max-acc_min)**(1/4)
+		x = tmp / (acc_step[step_idx[i+1],0] - acc_step[step_idx[i],0])
+
+		timestamp = (acc_step[step_idx[i+1],0] + acc_step[step_idx[i],0])/2
+		x_list[i,0] = timestamp
+		x_list[i,1] = x
+
+	
+	print('x_list')
+	print(x_list)
+	print('velo data')
+	print(velo_data)
+
+	idx = matchTime(x_list,velo_data,0.1)
+	print(idx)
+	x_plot = []
+	y_plot = []
+	for i in range(len(idx)):
+		print(x_list[idx[i][0]])
+		print(velo_data[idx[i][1]])
+		x_plot.append(x_list[idx[i][0],1])
+		y_plot.append(velo_data[idx[i][1],1])
+	
+	
+
+	slope,bias = leastSquaresMethod(x_plot,y_plot)
+
+	line_x = np.linspace(0,4,100)
+	line_y = np.zeros_like(line_x)
+	for i in range(line_x.shape[0]):
+		line_y[i] = slope*line_x[i] + bias
+
+	
+	
+	fig_test = plt.figure()
+
+	fig_ax = fig_test.add_subplot(1,1,1)
+	fig_ax.scatter(x_plot,y_plot)
+	fig_ax.plot(line_x,line_y)
+	fig_ax.set_xlim(0,4)
+	fig_ax.set_ylim(0,1.5)
+	fig_ax.set_aspect('equal')
+	fig_ax.grid()
+	fig_test.savefig('plot')
+	
+	length = calFootLength(acc_step,step_idx,0.5,0)
+	print('foot length')
+	print(length)
 
 def velo2Horizon(velo_mat): #速度を合成
 	ret = np.zeros((velo_mat.shape[0],2))
@@ -199,8 +283,6 @@ def velo2Horizon(velo_mat): #速度を合成
 	
 	return ret
 
-def timeMatch(acc_step,velo_data)
-	print()
 	
 def main():
 	np.set_printoptions(precision=3)
@@ -247,7 +329,6 @@ def main():
 	raw_velo_data = readGNSSVeloFromCSV(filename_velo)
 	velo_data = timestampFromStartTime(raw_velo_data,start_time)
 	velo_horizon_data = velo2Horizon(velo_data)
-	print(velo_horizon_data)
 
 
 
@@ -308,9 +389,10 @@ def main():
 	print('total step:',len(step_idx))
 	#step_data_ax.vlines(x=step_time, ymin=-3,ymax=3,zorder=100,color='red')
 	step_data_ax.scatter(acc_step[step_idx,0],acc_step[step_idx,1],color='red')
-	#length = calFootLength(acc_step,step_idx,0.52)
-	hoge = calFootVelo(acc_step,step_idx,0.52)
-	print(hoge)
+	length = calFootLength(acc_step,step_idx,0.52,0)
+	print(sum(length))
+	#calPrameterK(acc_step,step_idx,velo_horizon_data)
+	
 
 	raw_data_fig.savefig('raw_data')
 	gcs_data_fig.savefig('gcs_data')
