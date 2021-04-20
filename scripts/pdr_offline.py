@@ -200,6 +200,16 @@ def leastSquaresMethod(x_list,y_list):
 
 	return slope,bias
 
+def leastSquaresMethodNobias(x_list,y_list):
+	xy = 0.0
+	x_2 = 0.0
+	for x,y in zip(x_list,y_list):
+		xy += x*y
+		x_2 += x**2
+	
+	return xy/x_2
+
+
 def matchTime(x,y,max_delay):
 	ret = []
 	for i in range(x.shape[0]):
@@ -251,12 +261,14 @@ def calPrameterK(acc_step,step_idx,velo_data):
 	
 	
 
-	slope,bias = leastSquaresMethod(x_plot,y_plot)
+	slope = leastSquaresMethodNobias(x_plot,y_plot)
+	print('parameterK')
+	print(slope)
 
 	line_x = np.linspace(0,4,100)
 	line_y = np.zeros_like(line_x)
 	for i in range(line_x.shape[0]):
-		line_y[i] = slope*line_x[i] + bias
+		line_y[i] = slope*line_x[i]
 
 	
 	
@@ -271,7 +283,7 @@ def calPrameterK(acc_step,step_idx,velo_data):
 	fig_ax.grid()
 	fig_test.savefig('plot')
 	
-	length = calFootLength(acc_step,step_idx,0.5,0)
+	length = calFootLength(acc_step,step_idx,0.48,0)
 	print('foot length')
 	print(length)
 
@@ -283,8 +295,68 @@ def velo2Horizon(velo_mat): #速度を合成
 	
 	return ret
 
+def calAccStep(acc_calib,start_idx=0,end_idx=None):
+	#世界座標系の加速度を求める
+	rpy = getOrientation(acc_calib,20)
+	print('roll')
+	print(math.degrees(rpy[0]))
+	print('pitch')
+	print(math.degrees(rpy[1]))
+
+	rot = getRotationMatrix(rpy[0],rpy[1],0.0)
+
+	if end_idx == None:
+		acc_calib_sliced = acc_calib[start_idx:,:]
+	else:
+		acc_calib_sliced = acc_calib[start_idx:end_idx,:]
+
+	acc_gcs = np.zeros_like(acc_calib_sliced)
+	acc_gcs[:,0] = acc_calib_sliced[:,0] #タイムスタンプ代入
+	for i in range(acc_calib_sliced.shape[0]):
+		acc_gcs[i,1:4] = np.dot(rot,acc_calib_sliced[i,1:4].T)
+
+	'''
+	gcs_data_ax.plot(acc_gcs[:,0],acc_gcs[:,1],label='x')
+	gcs_data_ax.plot(acc_gcs[:,0],acc_gcs[:,2],label='y')
+	gcs_data_ax.plot(acc_gcs[:,0],acc_gcs[:,3],label='z')
+	gcs_data_ax.legend()
+	'''
+
+	#重力成分を抽出
+	acc_gravity = lowPassFilter(acc_gcs[:,3],0.9) #一次元配列
+
+	#gravity_data_ax.plot(acc_gcs[:,0],acc_gravity)
+
+	#重力成分以外を抽出 acc_hpf:一次元配列
+	#acc_hpf = acc_gcs[:,3] - acc_gravity[:]
+	acc_hpf = acc_gravity - np.full_like(acc_gravity,9.8)
+	
+	acc_step = np.zeros((acc_hpf.shape[0],2))
+	win_size = 9
+	moving_average_filter = np.ones(win_size) / win_size
+	
+	acc_step[:,1] = np.convolve(acc_hpf,moving_average_filter,mode='same')
+	acc_step[:,0] = acc_gcs[:,0]
+
+	return acc_step
+
+def StepCount(filename):
+	raw_imu_data = readAccelFromCSV(filename)
+	start_time = raw_imu_data[0,0]
+	raw_imu_data_timescale = timestampFromStartTime(raw_imu_data,start_time)
+	acc_calib = removeOffset(raw_imu_data_timescale,0.0,0.0,0.0)
+	acc_step = calAccStep(acc_calib)
+	step_idx= findFootStep(acc_step,50)
+	step_cnt = len(step_idx)
+	print(filename,':',step_cnt,'steps')
+
 	
 def main():
+
+	StepCount(sys.argv[1])
+
+	
+	'''
 	np.set_printoptions(precision=3)
 	np.set_printoptions(suppress=True)
 	#Matplotlib
@@ -339,45 +411,8 @@ def main():
 	raw_data_ax.plot(acc_calib[:,0],acc_calib[:,3],label='z')
 	raw_data_ax.legend()
 
-	#世界座標系の加速度を求める
-	rpy = getOrientation(acc_calib,20)
-	print('roll')
-	print(math.degrees(rpy[0]))
-	print('pitch')
-	print(math.degrees(rpy[1]))
 
-	rot = getRotationMatrix(rpy[0],rpy[1],0.0)
-
-	if end_idx == None:
-		acc_calib_sliced = acc_calib[start_idx:,:]
-	else:
-		acc_calib_sliced = acc_calib[start_idx:end_idx,:]
-
-	acc_gcs = np.zeros_like(acc_calib_sliced)
-	acc_gcs[:,0] = acc_calib_sliced[:,0] #タイムスタンプ代入
-	for i in range(acc_calib_sliced.shape[0]):
-		acc_gcs[i,1:4] = np.dot(rot,acc_calib_sliced[i,1:4].T)
-
-	gcs_data_ax.plot(acc_gcs[:,0],acc_gcs[:,1],label='x')
-	gcs_data_ax.plot(acc_gcs[:,0],acc_gcs[:,2],label='y')
-	gcs_data_ax.plot(acc_gcs[:,0],acc_gcs[:,3],label='z')
-	gcs_data_ax.legend()
-
-	#重力成分を抽出
-	acc_gravity = lowPassFilter(acc_gcs[:,3],0.9) #一次元配列
-
-	gravity_data_ax.plot(acc_gcs[:,0],acc_gravity)
-
-	#重力成分以外を抽出 acc_hpf:一次元配列
-	#acc_hpf = acc_gcs[:,3] - acc_gravity[:]
-	acc_hpf = acc_gravity - np.full_like(acc_gravity,9.8)
-	
-	acc_step = np.zeros((acc_hpf.shape[0],2))
-	win_size = 9
-	moving_average_filter = np.ones(win_size) / win_size
-	
-	acc_step[:,1] = np.convolve(acc_hpf,moving_average_filter,mode='same')
-	acc_step[:,0] = acc_gcs[:,0]
+	acc_step = calAccStep(acc_calib)
 
 
 	step_data_ax.plot(acc_step[:,0],acc_step[:,1])
@@ -389,15 +424,16 @@ def main():
 	print('total step:',len(step_idx))
 	#step_data_ax.vlines(x=step_time, ymin=-3,ymax=3,zorder=100,color='red')
 	step_data_ax.scatter(acc_step[step_idx,0],acc_step[step_idx,1],color='red')
-	length = calFootLength(acc_step,step_idx,0.52,0)
-	print(sum(length))
-	#calPrameterK(acc_step,step_idx,velo_horizon_data)
+	#length = calFootLength(acc_step,step_idx,0.48,0)
+	#print(sum(length))
+	calPrameterK(acc_step,step_idx,velo_horizon_data)
 	
 
 	raw_data_fig.savefig('raw_data')
 	gcs_data_fig.savefig('gcs_data')
 	gravity_data_fig.savefig('gravity_data')
 	step_data_fig.savefig('step_data')
+	'''
 
 	
 	
