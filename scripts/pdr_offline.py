@@ -7,11 +7,141 @@ import copy
 import pandas as pd
 import numpy as np
 import math
+import sympy #sec
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
+def kalmanFilter(imu_filename):
+	fig_tmp = plt.figure()
+	ax_tmp = fig_tmp.add_subplot(1,1,1)
+
+	acc_data = readAccelFromCSV(imu_filename)
+	gyro_data = readGyroFromCSV(imu_filename)
+	start_time = acc_data[0,0]
+	acc_data = timestampFromStartTime(acc_data,start_time)
+	gyro_data = timestampFromStartTime(gyro_data,start_time)
+
+
+	initial_x = np.array([0,0,0])#roll pitch yaw
+	x = initial_x.T	
+	A = np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,1.]])
+	P = np.array([[0.01,0.,0.],[0.,0.01,0.],[0.,0.,0.01]])
+	Q = np.array([[0.001,0.,0.],[0.,0.001,0.],[0.,0.,0.001]])
+	R = np.array([[0.1,0.,0.],[0.,0.1,0.],[0.,0.,0.1]])
+
+	x_tmp = np.zeros(3).T
+	gyro_rpy = np.zeros((gyro_data.shape[0],4))
+	
+	for i in range(1,gyro_data.shape[0]):
+		dt = gyro_data[i,0]-gyro_data[i-1,0]
+		#B行列更新	
+		B_tmp = np.array([[1,math.sin(x_tmp[0])*math.tan(x_tmp[1]),math.cos(x_tmp[0])*math.tan(x_tmp[1])],\
+		[0,math.cos(x_tmp[0]),-math.sin(x_tmp[0])], \
+		[0,math.sin(x_tmp[0])*sympy.sec(x_tmp[1]),math.cos(x_tmp[0])*sympy.sec(x_tmp[1])]])
+		u = gyro_data[i-1,1:4].T
+		x_n = np.dot(A,x_tmp)+np.dot(B_tmp,u*dt)
+		x_tmp = x_n
+		gyro_rpy[i,:] = np.array([gyro_data[i,0],x_n[0],x_n[1],x_n[2]])
+	
+	#ax_tmp.plot(gyro_data[:,0],gyro_data[:,1],label='x')
+	#ax_tmp.plot(gyro_data[:,0],gyro_data[:,2],label='y')
+	#ax_tmp.plot(gyro_data[:,0],gyro_data[:,3],label='z')
+	ax_tmp.plot(gyro_rpy[:,0],gyro_rpy[:,1],label='gyro_x')
+	ax_tmp.plot(gyro_rpy[:,0],gyro_rpy[:,2],label='gyro_y')
+	ax_tmp.plot(gyro_rpy[:,0],gyro_rpy[:,3],label='gyro_z')
+
+
+	C_mag = np.array([[0,0,0],[0,0,0],[0,0,1]])
+	C_imu = np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,0.]])
+
+	ret = np.zeros((acc_data.shape[0],4))
+
+
+	test_rpy = np.zeros((acc_data.shape[0],3))
+	for i in range(acc_data.shape[0]):
+		test_rpy[i,:] = getOrientation(acc_data[i,1:4])
+	ax_tmp.plot(acc_data[:,0],test_rpy[:,0],label='roll_acc')
+	ax_tmp.plot(acc_data[:,0],test_rpy[:,1],label='pitch_acc')
+	ax_tmp.plot(acc_data[:,0],test_rpy[:,2],label='yaw_acc')
+
+#cal initial rpy
+	rpy = getOrientation(acc_data[0,1:4])
+	x[0] = rpy[0]
+	x[1] = rpy[1]
+	x_filtered = x
+
+	tmp = np.array([acc_data[0,0],x[0],x[1],x[2]])
+	ret[0,:] = tmp
+
+	for i in range(1,acc_data.shape[0]):
+		#B行列更新	
+		B = np.array([[1,math.sin(x_filtered[0])*math.tan(x_filtered[1]),math.cos(x_filtered[0])*math.tan(x_filtered[1])],\
+		[0,math.cos(x_filtered[0]),-math.sin(x_filtered[0])], \
+		[0,math.sin(x_filtered[0])*sympy.sec(x_filtered[1]),math.cos(x_filtered[0])*sympy.sec(x_filtered[1])]])
+		#B = np.zeros((3,3))
+
+		#deltaT計算
+		delta = acc_data[i,0]-acc_data[i-1,0]
+
+#Prediction
+		u = gyro_data[i,1:4].T
+		x_ = np.dot(A,x_filtered) + np.dot(B,u*delta)
+		P = np.dot(np.dot(A,P),A.T)
+
+
+#Filtering
+#get Observation
+		rpy = getOrientation(acc_data[i,1:4])
+		y = rpy.T
+		if np.linalg.norm(acc_data[i,1:4])>9.9 or np.linalg.norm(acc_data[i,1:4])<9.7:
+			print('over',i)
+			y = np.array([0,0,0]).T
+			C_imu = np.zeros((3,3))
+		else:
+			C_imu = np.array([[1.,0.,0.],[0.,1.,0.],[0.,0.,0.]])
+#calculate Kalman gain
+		CPC = np.dot(C_imu,np.dot(P,C_imu.T))
+		K = np.dot(np.dot(P,C_imu.T),np.linalg.inv(CPC+R))
+		x_filtered = x_ + np.dot(K,y-np.dot(C_imu,x_))
+
+		tmp = np.array([acc_data[i,0],x_filtered[0],x_filtered[1],x_filtered[2]])
+		ret[i,:] = tmp
+	
+	ax_tmp.plot(ret[:,0],ret[:,1],label='roll')
+	ax_tmp.plot(ret[:,0],ret[:,2],label='pitch')
+	ax_tmp.plot(ret[:,0],ret[:,3],label='yaw')
+
+	ax_tmp.legend()
+
+	fig_tmp.savefig('filtered',dpi=100)
+
+	
+
+def headingEstimator(imu_filename,mag_filename):
+	acc_data = readAccelFromCSV(imu_filename)
+	mag_data = readMagFromCSV(mag_filename)
+	gyro_data = readGyroFromCSV(imu_filename)
+
+	rpy = getOrientation(acc_data,20)
+	rot = getRotationMatrix(rpy[0],rpy[1],0)
+
+	mag_gcs = np.zeros_like(mag_data)
+	for i in range(mag_data.shape[0]):
+		mag_gcs[i,1:4] = np.dot(rot,mag_data[i,1:4].T)
+
+	#TODO
+
+
+def readGyroFromCSV(filename):
+	df = pd.read_csv(filename)
+	df_new = df.rename(columns={'field.header.stamp':'stamp','field.angular_velocity.x':'x','field.angular_velocity.y':'y','field.angular_velocity.z':'z'})
+	return df_new[['stamp','x','y','z']].values
+def readMagFromCSV(filename):
+	df = pd.read_csv(filename)
+	df_new = df.rename(columns={'field.header.stamp':'stamp','field.magnetic_field.x':'x','field.magnetic_field.y':'y','field.magnetic_field.z':'z'})
+	return df_new[['stamp','x','y','z']].values
 	
 def readAccelFromCSV(filename):
 	df = pd.read_csv(filename)
@@ -39,7 +169,15 @@ def removeOffset(mat,offset_x,offset_y,offset_z):
 	return mat
 	
 		
-def getOrientation(mat,window):
+def getOrientation(acc):
+	rpy = np.zeros(3)
+	rpy[0] = math.atan2(acc[1],acc[2]) #tan(ay/az)
+	rpy[1] = math.atan(-acc[0]/math.sqrt(acc[1]**2+acc[2]**2))
+	rpy[2] = 0.0
+	return rpy
+
+	
+def getAverageOrientation(mat,window):
 	sum_var = np.zeros(3)
 	rpy = np.zeros(3)
 	
@@ -297,7 +435,7 @@ def velo2Horizon(velo_mat): #速度を合成
 
 def calAccStep(acc_calib,start_idx=0,end_idx=None):
 	#世界座標系の加速度を求める
-	rpy = getOrientation(acc_calib,20)
+	rpy = getAverageOrientation(acc_calib,20)
 	print('roll')
 	print(math.degrees(rpy[0]))
 	print('pitch')
@@ -340,7 +478,7 @@ def calAccStep(acc_calib,start_idx=0,end_idx=None):
 
 	return acc_step
 
-def StepCount(filename):
+def StepCount(filename): #ステップ数を検証する為だけのテスト用関数
 	raw_imu_data = readAccelFromCSV(filename)
 	start_time = raw_imu_data[0,0]
 	raw_imu_data_timescale = timestampFromStartTime(raw_imu_data,start_time)
@@ -350,12 +488,98 @@ def StepCount(filename):
 	step_cnt = len(step_idx)
 	print(filename,':',step_cnt,'steps')
 
+def addPlotSample(filename,x_plot,y_plot):
+	
+#データ下処理
+	raw_imu_data = readAccelFromCSV(filename+'_imu.csv')
+	start_time = raw_imu_data[0,0]
+	raw_imu_data_timescale = timestampFromStartTime(raw_imu_data,start_time)
+	acc_calib = removeOffset(raw_imu_data_timescale,0.0,0.0,0.0)
+	acc_step = calAccStep(acc_calib)
+
+	raw_velo_data = readGNSSVeloFromCSV(filename+'_velo.csv')
+	velo_data = timestampFromStartTime(raw_velo_data,start_time)
+	velo_horizon_data = velo2Horizon(velo_data)
+	
+#ステップカウント
+	step_idx= findFootStep(acc_step,50)
+
+	step_num = len(step_idx) #歩数
+	x_list = np.zeros((step_num,2))
+	for i in range(len(step_idx)-1):
+		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
+		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
+		tmp = (acc_max-acc_min)**(1/4)
+		x = tmp / (acc_step[step_idx[i+1],0] - acc_step[step_idx[i],0])
+
+		timestamp = (acc_step[step_idx[i+1],0] + acc_step[step_idx[i],0])/2
+		x_list[i,0] = timestamp
+		x_list[i,1] = x
+
+
+	idx = matchTime(x_list,velo_horizon_data,0.1)
+
+	for i in range(len(idx)):
+		#print(x_list[idx[i][0]])
+		#print(velo_data[idx[i][1]])
+		x_plot.append(x_list[idx[i][0],1])
+		y_plot.append(velo_horizon_data[idx[i][1],1])
+	
 	
 def main():
 
-	StepCount(sys.argv[1])
+
+	kalmanFilter(sys.argv[1])
+	return
+
+	x_plot = []
+	y_plot = []
+
+	pallet = ['b','g','r','c','m','y','k']
+
+	plot_fig = plt.figure()
+	plot_ax = plot_fig.add_subplot(1,1,1)
+
+	x_plot = []
+	y_plot = []
+	for i in range(1,len(sys.argv)):
+		x_tmp = []
+		y_tmp = []
+		addPlotSample(sys.argv[i],x_tmp,y_tmp)
+		plot_ax.scatter(x_tmp,y_tmp,s=2,color=pallet[i],label=sys.argv[i])
+		x_plot.extend(x_tmp)
+		y_plot.extend(y_tmp)
+	#addPlotSample(sys.argv[2],x_plot,y_plot)
+
+	print(len(x_plot))
+	print(len(y_plot))
+	
+	slope = leastSquaresMethodNobias(x_plot,y_plot)
+	print('parameterK')
+	print(slope)
 
 	
+	line_x = np.linspace(0,4,100)
+	line_y = np.zeros_like(line_x)
+	for i in range(line_x.shape[0]):
+		line_y[i] = slope*line_x[i]
+
+	#残差計算
+	error_sum = 0.0
+	for i in range(len(x_plot)):
+		ref_y = slope*x_plot[i]
+		error_sum += y_plot[i] - ref_y
+	
+	error_ave = error_sum/len(x_plot)
+	print('average error',error_ave)
+
+	plot_ax.plot(line_x,line_y)
+	#plot_ax.set_xlim(0,4)
+	#plot_ax.set_ylim(0,2)
+	plot_ax.set_aspect('equal')
+	plot_ax.grid()
+	plot_ax.legend()
+	plot_fig.savefig('plot',dpi=300)
 	'''
 	np.set_printoptions(precision=3)
 	np.set_printoptions(suppress=True)
