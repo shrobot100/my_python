@@ -15,6 +15,7 @@ Odometry_C	random_forest_relativePos.py	/^class Odometry_C:$/;"	c
 Pose_C	SLAMcluster.py	/^class Pose_C:$/;"	c
 Pose_C	random_forest.py	/^class Pose_C:$/;"	c
 Pose_C	random_forest_relativePos.py	/^class Pose_C:$/;"	c
+StepCount	pdr_offline.py	/^def StepCount(filename): #ステップ数を検証する為だけのテスト用関数$/;"	f
 __init__	SLAMcluster.py	/^	def __init__(self,filename=None,label=None):$/;"	m	class:Odometry_C
 __init__	SLAMcluster.py	/^	def __init__(self,timestamp,pos,orientation):$/;"	m	class:Pose_C
 __init__	pdr.py	/^	def __init__(self):$/;"	m	class:Node
@@ -29,21 +30,26 @@ abs_test_predict_odom	random_forest_relativePos.py	/^	abs_test_predict_odom = te
 abs_train_predict_odom	random_forest_relativePos.py	/^	abs_train_predict_odom = train_predict_odom.getRelativeOdomInv()$/;"	v
 acc_calib_buf	pdr.py	/^acc_calib_buf = []$/;"	v
 acc_calib_buf_size	pdr.py	/^acc_calib_buf_size = 100$/;"	v
+addPlotSample	pdr_offline.py	/^def addPlotSample(filename,x_plot,y_plot):$/;"	f
 analysis	SLAMcluster.py	/^def analysis(odom_list):$/;"	f
 ax	random_forest.py	/^ax = fig.add_subplot(211,aspect="equal")$/;"	v
 ax	random_forest_relativePos.py	/^ax = fig.add_subplot(211,aspect="equal")$/;"	v
 ax2	random_forest.py	/^ax2 = fig.add_subplot(212,aspect="equal")$/;"	v
 ax2	random_forest_relativePos.py	/^ax2 = fig.add_subplot(212,aspect="equal")$/;"	v
+calAccStep	pdr_offline.py	/^def calAccStep(acc_calib,start_idx=0,end_idx=None):$/;"	f
 calCosSim	SLAMcluster.py	/^def calCosSim(v1,v2):$/;"	f
 calDiffVectorMap	SLAMcluster.py	/^def calDiffVectorMap(odom1,odom2,k,d_n,N):$/;"	f
 calDiffVectorMap_v2	SLAMcluster.py	/^def calDiffVectorMap_v2(odom1,odom2,win_distance,d_n,N):$/;"	f
+calDistanceFromSLAM	pdr_offline.py	/^def calDistanceFromSLAM(filename):$/;"	f
 calEllipse	SLAMcluster.py	/^def calEllipse(mean,cov):$/;"	f
-calFootLength	pdr_offline.py	/^def calFootLength(acc_step,step_idx,K):$/;"	f
-calFootVelo	pdr_offline.py	/^def calFootVelo(acc_step,step_idx,K):$/;"	f
+calFootLength	pdr_offline.py	/^def calFootLength(acc_step,step_idx,K,bias):$/;"	f
+calFootVelo	pdr_offline.py	/^def calFootVelo(acc_step,step_idx,K,bias):$/;"	f
 calMaxSpeed	SLAMcluster.py	/^	def calMaxSpeed(self,window):$/;"	m	class:Odometry_C
 calMovingAverage	pdr.py	/^def calMovingAverage(data,win_size):$/;"	f
 calPrameterK	pdr_offline.py	/^def calPrameterK(acc_step,step_idx,velo_data):$/;"	f
 calStepAccel	pdr.py	/^def calStepAccel(accel_z,winsize):$/;"	f
+calVeloFromPos	pdr_offline.py	/^def calVeloFromPos(mat):$/;"	f
+calWalkingDistance	pdr_offline.py	/^def calWalkingDistance(filename,K):$/;"	f
 checkDeltaTime	SLAMcluster.py	/^def checkDeltaTime(odom1,odom2):$/;"	f
 compareTwoOdom	SLAMcluster.py	/^def compareTwoOdom(odom1,odom2,base_filename):$/;"	f
 extract	SLAMcluster.py	/^	def extract(self,init_time,th_time):$/;"	m	class:Odometry_C
@@ -63,11 +69,12 @@ findPeakTime	pdr_offline.py	/^def findPeakTime(acc_z,acc_peak,N):$/;"	f
 findSlopeTime	pdr_offline.py	/^def findSlopeTime(acc_z,N):$/;"	f
 footDetection	pdr.py	/^class footDetection:$/;"	c
 footLengthEstimator	pdr.py	/^class footLengthEstimator:$/;"	c
+getAverageOrientation	pdr_offline.py	/^def getAverageOrientation(mat,window):$/;"	f
 getName	SLAMcluster.py	/^	def getName(self):$/;"	m	class:Odometry_C
 getName	random_forest.py	/^	def getName(self):$/;"	m	class:Odometry_C
 getName	random_forest_relativePos.py	/^	def getName(self):$/;"	m	class:Odometry_C
 getOrientation	SLAMcluster.py	/^	def getOrientation(self):$/;"	m	class:Pose_C
-getOrientation	pdr_offline.py	/^def getOrientation(mat,window):$/;"	f
+getOrientation	pdr_offline.py	/^def getOrientation(acc):$/;"	f
 getOrientation	random_forest.py	/^	def getOrientation(self):$/;"	m	class:Pose_C
 getOrientation	random_forest_relativePos.py	/^	def getOrientation(self):$/;"	m	class:Pose_C
 getPos	SLAMcluster.py	/^	def getPos(self):$/;"	m	class:Pose_C
@@ -99,7 +106,9 @@ info	SLAMcluster.py	/^	def info(self):$/;"	m	class:Pose_C
 info	random_forest.py	/^	def info(self):$/;"	m	class:Pose_C
 info	random_forest_relativePos.py	/^	def info(self):$/;"	m	class:Pose_C
 integration	pdr_offline.py	/^def integration(t_list,f_list):$/;"	f
+kalmanFilter	pdr_offline.py	/^def kalmanFilter(imu_filename):$/;"	f
 leastSquaresMethod	pdr_offline.py	/^def leastSquaresMethod(x_list,y_list):$/;"	f
+leastSquaresMethodNobias	pdr_offline.py	/^def leastSquaresMethodNobias(x_list,y_list):$/;"	f
 length	SLAMcluster.py	/^	def length(self):$/;"	m	class:Odometry_C
 length	random_forest.py	/^	def length(self):$/;"	m	class:Odometry_C
 length	random_forest_relativePos.py	/^	def length(self):$/;"	m	class:Odometry_C
@@ -129,6 +138,9 @@ raw_data	random_forest_relativePos.py	/^		raw_data = y_train_pred[i]$/;"	v
 raw_image	image_save.py	/^			raw_image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)$/;"	v
 readAccelFromCSV	pdr_offline.py	/^def readAccelFromCSV(filename):$/;"	f
 readGNSSVeloFromCSV	pdr_offline.py	/^def readGNSSVeloFromCSV(filename):$/;"	f
+readGyroFromCSV	pdr_offline.py	/^def readGyroFromCSV(filename):$/;"	f
+readLidarPosFromCSV	pdr_offline.py	/^def readLidarPosFromCSV(filename):$/;"	f
+readMagFromCSV	pdr_offline.py	/^def readMagFromCSV(filename):$/;"	f
 removeOffset	pdr_offline.py	/^def removeOffset(mat,offset_x,offset_y,offset_z):$/;"	f
 rotate	SLAMcluster.py	/^	def rotate(self,roll,pitch,yaw):$/;"	m	class:Odometry_C
 rotate	random_forest.py	/^	def rotate(self,roll,pitch,yaw):$/;"	m	class:Odometry_C

@@ -13,6 +13,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
+
 def kalmanFilter(imu_filename):
 	fig_tmp = plt.figure()
 	ax_tmp = fig_tmp.add_subplot(1,1,1)
@@ -119,20 +120,26 @@ def kalmanFilter(imu_filename):
 
 	
 
-def headingEstimator(imu_filename,mag_filename):
-	acc_data = readAccelFromCSV(imu_filename)
-	mag_data = readMagFromCSV(mag_filename)
-	gyro_data = readGyroFromCSV(imu_filename)
 
-	rpy = getOrientation(acc_data,20)
-	rot = getRotationMatrix(rpy[0],rpy[1],0)
+def readLidarPosFromCSV(filename):
+	df = pd.read_csv(filename)
+	df_new = df.rename(columns={'field.header.stamp':'stamp','field.pose.pose.position.x':'x','field.pose.pose.position.y':'y','field.pose.pose.position.z':'z'})
+	mat = df_new[['stamp','x','y','z']].values
+	return mat
 
-	mag_gcs = np.zeros_like(mag_data)
-	for i in range(mag_data.shape[0]):
-		mag_gcs[i,1:4] = np.dot(rot,mag_data[i,1:4].T)
-
-	#TODO
-
+def calVeloFromPos(mat):
+	average = 1
+	velo_mat = np.zeros((mat.shape[0]-average,2))
+#速度計算
+	for i in range(average,mat.shape[0]):
+		delta_t = mat[i,0]-mat[i-average,0]
+		delta_pos = mat[i,1:4]-mat[i-average,1:4]
+		delta_pos_norm = math.sqrt(delta_pos[0]**2+delta_pos[1]**2+delta_pos[2]**2)
+		#delta_pos_norm = math.sqrt(delta_pos[0]**2+delta_pos[1]**2)
+		velo = delta_pos_norm/delta_t
+		velo_mat[i-average,:] = np.array([mat[i,0],velo])
+	return velo_mat
+		
 
 def readGyroFromCSV(filename):
 	df = pd.read_csv(filename)
@@ -305,6 +312,8 @@ def calFootLength(acc_step,step_idx,K,bias):
 		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
 		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
 		ret.append(K*(acc_max-acc_min)**(1/4)+bias)
+
+
 	
 	return ret
 
@@ -500,6 +509,16 @@ def addPlotSample(filename,x_plot,y_plot):
 	raw_velo_data = readGNSSVeloFromCSV(filename+'_velo.csv')
 	velo_data = timestampFromStartTime(raw_velo_data,start_time)
 	velo_horizon_data = velo2Horizon(velo_data)
+	np.savetxt(filename+'gnss_velo.csv',velo_horizon_data,delimiter=',')
+
+	'''
+	raw_truth_pos_data = readLidarPosFromCSV(filename+'_slam.csv')
+	truth_pos_data = timestampFromStartTime(raw_truth_pos_data,start_time)
+	truth_velo_data = calVeloFromPos(truth_pos_data)
+	
+	np.savetxt(filename+'slam_velo.csv',truth_velo_data,delimiter=',')
+	'''
+
 	
 #ステップカウント
 	step_idx= findFootStep(acc_step,50)
@@ -518,19 +537,48 @@ def addPlotSample(filename,x_plot,y_plot):
 
 
 	idx = matchTime(x_list,velo_horizon_data,0.1)
+	#idx = matchTime(x_list,truth_velo_data,0.1)
 
 	for i in range(len(idx)):
-		#print(x_list[idx[i][0]])
-		#print(velo_data[idx[i][1]])
 		x_plot.append(x_list[idx[i][0],1])
 		y_plot.append(velo_horizon_data[idx[i][1],1])
+		#y_plot.append(truth_velo_data[idx[i][1],1])
 	
+def calWalkingDistance(filename,K):
+	raw_imu_data = readAccelFromCSV(filename)
+	start_time = raw_imu_data[0,0]
+	raw_imu_data_timescale = timestampFromStartTime(raw_imu_data,start_time)
+	acc_calib = removeOffset(raw_imu_data_timescale,0.0,0.0,0.0)
+	acc_step = calAccStep(acc_calib)
+	step_idx= findFootStep(acc_step,50)
+	print(len(step_idx))
+
+	length = calFootLength(acc_step,step_idx,K,0)
+	print(sum(length))	
+
+def calDistanceFromSLAM(filename):
+	mat = readLidarPosFromCSV(filename)
+	length = 0.0
+	for i in range(1,mat.shape[0]):
+		pre_pos = mat[i-1,1:4]
+		pos = mat[i,1:4]
+		delta = pos - pre_pos
+		length += math.sqrt(delta[0]**2+delta[1]**2+delta[2]**2)
+
+	return length
+
+
 	
 def main():
 
-
-	kalmanFilter(sys.argv[1])
+	calWalkingDistance(sys.argv[1],0.52)
+	length = calDistanceFromSLAM(sys.argv[2])
+	print('slam:')
+	print(length)
 	return
+
+	#kalmanFilter(sys.argv[1])
+	#return
 
 	x_plot = []
 	y_plot = []
@@ -580,6 +628,11 @@ def main():
 	plot_ax.grid()
 	plot_ax.legend()
 	plot_fig.savefig('plot',dpi=300)
+
+
+
+
+	
 	'''
 	np.set_printoptions(precision=3)
 	np.set_printoptions(suppress=True)
