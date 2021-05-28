@@ -11,6 +11,7 @@ import sympy #sec
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import random
 
 
 
@@ -160,7 +161,20 @@ def readAccelFromCSV(filename):
 def readGNSSVeloFromCSV(filename):
 	df = pd.read_csv(filename)
 	df_new = df.rename(columns={'field.header.stamp':'stamp','field.accel.accel.linear.x':'x','field.accel.accel.linear.y':'y','field.accel.accel.linear.z':'z'})
-	return df_new[['stamp','x','y','z']].values
+	
+	mat = df_new[['stamp','x','y','z']].values
+	
+	#同じ値の部分を排除
+	delete_list = []
+	pre_vec = mat[0,1:4]
+	for i in range(1,mat.shape[0]):
+		if(np.all(pre_vec == mat[i,1:4])):
+			delete_list.append(i)
+		pre_vec = mat[i,1:4]
+
+	ret_mat = np.delete(mat,delete_list,axis = 0)
+	print(ret_mat)
+	return ret_mat
 
 
 def timestampFromStartTime(mat,origin_time):
@@ -510,14 +524,13 @@ def addPlotSample(filename,x_plot,y_plot):
 	velo_data = timestampFromStartTime(raw_velo_data,start_time)
 	velo_horizon_data = velo2Horizon(velo_data)
 	np.savetxt(filename+'gnss_velo.csv',velo_horizon_data,delimiter=',')
-
 	'''
 	raw_truth_pos_data = readLidarPosFromCSV(filename+'_slam.csv')
 	truth_pos_data = timestampFromStartTime(raw_truth_pos_data,start_time)
 	truth_velo_data = calVeloFromPos(truth_pos_data)
-	
-	np.savetxt(filename+'slam_velo.csv',truth_velo_data,delimiter=',')
 	'''
+	
+	#np.savetxt(filename+'slam_velo.csv',truth_velo_data,delimiter=',')
 
 	
 #ステップカウント
@@ -570,16 +583,23 @@ def calDistanceFromSLAM(filename):
 
 	
 def main():
-
-	calWalkingDistance(sys.argv[1],0.52)
+	'''
 	length = calDistanceFromSLAM(sys.argv[2])
 	print('slam:')
 	print(length)
+	print('K=0.349')
+	calWalkingDistance(sys.argv[1],0.349)
+	print('K=0.488')
+	calWalkingDistance(sys.argv[1],0.488)
+	print('K=0.492')
+	calWalkingDistance(sys.argv[1],0.492)
 	return
+	'''
 
 	#kalmanFilter(sys.argv[1])
 	#return
 
+	sample = 200
 	x_plot = []
 	y_plot = []
 
@@ -591,18 +611,30 @@ def main():
 	x_plot = []
 	y_plot = []
 	for i in range(1,len(sys.argv)):
+		print('filename:',sys.argv[i])
+		StepCount(sys.argv[i]+'_imu.csv')
 		x_tmp = []
 		y_tmp = []
 		addPlotSample(sys.argv[i],x_tmp,y_tmp)
-		plot_ax.scatter(x_tmp,y_tmp,s=2,color=pallet[i],label=sys.argv[i])
+		#plot_ax.scatter(x_tmp,y_tmp,s=2,color=pallet[i],label=sys.argv[i])
 		x_plot.extend(x_tmp)
 		y_plot.extend(y_tmp)
 	#addPlotSample(sys.argv[2],x_plot,y_plot)
 
-	print(len(x_plot))
-	print(len(y_plot))
+
+	print('plot num',len(x_plot))
+	r_list = random.sample(range(len(x_plot)), k=sample)
+
+	x_random_list = []
+	y_random_list = []
+	for i in r_list:
+		x_random_list.append(x_plot[i])
+		y_random_list.append(y_plot[i])
+
+
+	plot_ax.scatter(x_random_list,y_random_list,s=2,color=pallet[0])
 	
-	slope = leastSquaresMethodNobias(x_plot,y_plot)
+	slope = leastSquaresMethodNobias(x_random_list,y_random_list)
 	print('parameterK')
 	print(slope)
 
@@ -613,6 +645,7 @@ def main():
 		line_y[i] = slope*line_x[i]
 
 	#残差計算
+	'''
 	error_sum = 0.0
 	for i in range(len(x_plot)):
 		ref_y = slope*x_plot[i]
@@ -620,6 +653,7 @@ def main():
 	
 	error_ave = error_sum/len(x_plot)
 	print('average error',error_ave)
+	'''
 
 	plot_ax.plot(line_x,line_y)
 	#plot_ax.set_xlim(0,4)
@@ -627,6 +661,8 @@ def main():
 	plot_ax.set_aspect('equal')
 	plot_ax.grid()
 	plot_ax.legend()
+	plot_ax.set_xlim(0,4.0)
+	plot_ax.set_ylim(0,2.0)
 	plot_fig.savefig('plot',dpi=300)
 
 
