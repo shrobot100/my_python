@@ -291,50 +291,12 @@ def findPeakTime(acc_z,acc_peak,N):
 	for i in range(N//2,acc_z.shape[0]-N//2):
 		offset = np.argmax(acc_z[i-N//2:i+N//2,1])
 		max_idx = i-N//2 + offset
-		if offset != N//2 or acc_z[max_idx,1] > acc_peak: #中央値でなない　or 閾値より小さい
+		if offset != N//2 or acc_z[max_idx,1] < acc_peak: #中央値でなない　or 閾値より小さい
 			continue
 		else:
 			peak_idx_list.append(max_idx)
 	return peak_idx_list
 	
-def findNegativePeakTime(acc_z,acc_peak,N):
-	#find peak
-	peak_idx_list = []
-	for i in range(N//2,acc_z.shape[0]-N//2):
-		offset = np.argmin(acc_z[i-N//2:i+N//2,1])
-		min_idx = i-N//2 + offset
-		if offset != N//2 or acc_z[min_idx,1] > acc_peak: #中央値でなない　or 閾値より小さい
-			continue
-		else:
-			peak_idx_list.append(min_idx)
-	return peak_idx_list
-def findNegativeSlopeTime(acc_z,N):
-	slope_idx_list = []
-	for t in range(N//2,acc_z.shape[0]-N//2):
-		sum_var1 = 0.0
-		sum_var2 = 0.0
-		for i in range(t-N//2,t-1):
-			sum_var1 += acc_z[i+1,1] - acc_z[i,1]
-		for i in range(t+1,t+N//2):
-			sum_var2 += acc_z[i,1] - acc_z[i-1,1]
-		if sum_var1 < 0 and sum_var2 > 0:
-			slope_idx_list.append(t)
-	
-	return slope_idx_list
-def findNegativePeak2PeakTime(acc_z,acc_pp,N):
-	p2p_idx_list = []
-	for t in range(N//2,acc_z.shape[0]-N//2):
-		delta1 = []
-		delta2 = []
-		for i in range(1,N//2):
-			delta1.append(acc_z[t,1] - acc_z[t+i,1])
-			delta2.append(acc_z[t,1] - acc_z[t-i,1])
-		max_delta1 = min(delta1)
-		max_delta2 = min(delta2)
-		if max_delta1 < acc_pp and max_delta2 < acc_pp:
-			p2p_idx_list.append(t)
-
-	return p2p_idx_list
 def findPeak2PeakTime(acc_z,acc_pp,N):
 	p2p_idx_list = []
 	for t in range(N//2,acc_z.shape[0]-N//2):
@@ -366,10 +328,9 @@ def findSlopeTime(acc_z,N):
 
 def findFootStep(acc_z,N):
 	#find peak
-	#peak_idx_list = findPeakTime(acc_z,0.5,N)
-	peak_idx_list = findNegativePeakTime(acc_z,-0.5,N)
-	p2p_idx_list = findNegativePeak2PeakTime(acc_z,-0.5,N)
-	slope_idx_list = findNegativeSlopeTime(acc_z,10)
+	peak_idx_list = findPeakTime(acc_z,0.5,N)
+	p2p_idx_list = findPeak2PeakTime(acc_z,1.0,N)
+	slope_idx_list = findSlopeTime(acc_z,N)
 
 	#Plot Peak
 	peak_fig = plt.figure()
@@ -398,14 +359,6 @@ def findFootStep(acc_z,N):
 	step_idx_list = list(fusion_idx_set)
 
 	step_idx_list.sort()
-
-
-	#Plot step 
-	step_fig = plt.figure()
-	step_ax = step_fig.add_subplot(1,1,1)
-	step_ax.plot(acc_z[:,0],acc_z[:,1])
-	step_ax.scatter(acc_z[step_idx_list,0],acc_z[step_idx_list,1],color='red')
-	step_fig.savefig('step')
 	
 	return step_idx_list
 
@@ -591,8 +544,8 @@ def calAccStep(acc_calib,start_idx=0,end_idx=None):
 	#gravity_data_ax.plot(acc_gcs[:,0],acc_gravity)
 
 	#重力成分以外を抽出 acc_hpf:一次元配列
-	acc_hpf = acc_gcs[:,3] - acc_gravity[:]
-	#acc_hpf = acc_gravity - np.full_like(acc_gravity,9.8) #定数重力引くver
+	#acc_hpf = acc_gcs[:,3] - acc_gravity[:]
+	acc_hpf = acc_gravity - np.full_like(acc_gravity,9.8)
 	
 	acc_step = np.zeros((acc_hpf.shape[0],2))
 	win_size = 9
@@ -685,157 +638,32 @@ def calDistanceFromSLAM(filename):
 
 	
 def main():
-	StepCount(sys.argv[1])
-	return
-	#length = calDistanceFromSLAM(sys.argv[2])
-	#print('slam:')
-	#print(length)
-	calWalkingDistance(sys.argv[1],0.5826)
-	return
-
-	#kalmanFilter(sys.argv[1],sys.argv[2])
-
-	sample = 200
-	x_plot = []
-	y_plot = []
-
-	pallet = ['b','g','r','c','m','y','k']
-
-	plot_fig = plt.figure()
-	plot_ax = plot_fig.add_subplot(1,1,1)
-
-	x_plot = []
-	y_plot = []
-	for i in range(1,len(sys.argv)):
-		print('filename:',sys.argv[i])
-		StepCount(sys.argv[i]+'_imu.csv')
-		x_tmp = []
-		y_tmp = []
-		addPlotSample(sys.argv[i],x_tmp,y_tmp)
-		plot_ax.scatter(x_tmp,y_tmp,s=2,color=pallet[i],label=sys.argv[i])
-		x_plot.extend(x_tmp)
-		y_plot.extend(y_tmp)
-	#addPlotSample(sys.argv[2],x_plot,y_plot)
-
-	slope = leastSquaresMethodNobias(x_plot,y_plot)
-	print('parameterK')
-	print(slope)
 
 	
-	line_x = np.linspace(0,4,100)
-	line_y = np.zeros_like(line_x)
-	for i in range(line_x.shape[0]):
-		line_y[i] = slope*line_x[i]
-
-	#残差計算
-	'''
-	error_sum = 0.0
-	for i in range(len(x_plot)):
-		ref_y = slope*x_plot[i]
-		error_sum += y_plot[i] - ref_y
-	
-	error_ave = error_sum/len(x_plot)
-	print('average error',error_ave)
-	'''
-
-	plot_ax.plot(line_x,line_y)
-	#plot_ax.set_xlim(0,4)
-	#plot_ax.set_ylim(0,2)
-	plot_ax.set_aspect('equal')
-	plot_ax.grid()
-	plot_ax.legend()
-	plot_ax.set_xlim(0,4.0)
-	plot_ax.set_ylim(0,2.0)
-	plot_fig.savefig('plot',dpi=300)
-
-
-
-
-	
-	'''
-	np.set_printoptions(precision=3)
-	np.set_printoptions(suppress=True)
-	#Matplotlib
-	raw_data_fig = plt.figure()
-	raw_data_ax = raw_data_fig.add_subplot(1,1,1)
-
-	gcs_data_fig = plt.figure()
-	gcs_data_ax = gcs_data_fig.add_subplot(1,1,1)
-
-	gravity_data_fig = plt.figure()
-	gravity_data_ax = gravity_data_fig.add_subplot(1,1,1)
-
-	step_data_fig = plt.figure()
-	step_data_ax = step_data_fig.add_subplot(1,1,1)
-
-	args = sys.argv
-
-	if len(args)<=2 :
-		print(args)
-		print('you must specify the arugument')
-		print('ex: filename start_idx end_idx')
-		return
-	filename_imu = sys.argv[1]
-	filename_velo = sys.argv[2]
-	if len(args)>=4:
-		start_idx = int(sys.argv[3])
-	else:
-		start_idx = 0
-	if len(args)>=4:
-		end_idx = int(sys.argv[4])
-	else:
-		end_idx = None
-	print('loading' + filename_imu)
-	
-
-
-	raw_imu_data = readAccelFromCSV(filename_imu)
+#データ下処理
+	raw_imu_data = readAccelFromCSV(sys.argv[1])
 	start_time = raw_imu_data[0,0]
 	raw_imu_data_timescale = timestampFromStartTime(raw_imu_data,start_time)
 	acc_calib = removeOffset(raw_imu_data_timescale,0.0,0.0,0.0)
-
-	raw_velo_data = readGNSSVeloFromCSV(filename_velo)
-	velo_data = timestampFromStartTime(raw_velo_data,start_time)
-	velo_horizon_data = velo2Horizon(velo_data)
-
-
-
-
-	#キャリブレーション後のデータをプロット
-	raw_data_ax.plot(acc_calib[:,0],acc_calib[:,1],label='x')
-	raw_data_ax.plot(acc_calib[:,0],acc_calib[:,2],label='y')
-	raw_data_ax.plot(acc_calib[:,0],acc_calib[:,3],label='z')
-	raw_data_ax.legend()
-
-
 	acc_step = calAccStep(acc_calib)
 
+	
 
-	step_data_ax.plot(acc_step[:,0],acc_step[:,1])
-
-
+	
+#ステップカウント
 	step_idx= findFootStep(acc_step,50)
-	print('step index')
-	print(step_idx)
-	print('total step:',len(step_idx))
-	#step_data_ax.vlines(x=step_time, ymin=-3,ymax=3,zorder=100,color='red')
-	step_data_ax.scatter(acc_step[step_idx,0],acc_step[step_idx,1],color='red')
-	#length = calFootLength(acc_step,step_idx,0.48,0)
-	#print(sum(length))
-	calPrameterK(acc_step,step_idx,velo_horizon_data)
-	
+	print('step count:',len(step_idx))
 
-	raw_data_fig.savefig('raw_data')
-	gcs_data_fig.savefig('gcs_data')
-	gravity_data_fig.savefig('gravity_data')
-	step_data_fig.savefig('step_data')
-	'''
+	step_num = len(step_idx) #歩数
+	x_list = np.zeros((step_num,2))
+	for i in range(len(step_idx)-1):
+		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
+		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
+		tmp = (acc_max-acc_min)**(1/4)
+		delta = (acc_step[step_idx[i+1],0] - acc_step[step_idx[i],0])
+		x = tmp/delta
 
-	
-	
-
-
-
+		print(x,',',delta) 
 
 
 if __name__ == "__main__":

@@ -167,6 +167,7 @@ include_directories(
 	 scripts/SLAMcluster.py
 	 scripts/pdr.py
 	 scripts/pdr_offline.py
+	 scripts/calibrate.py
 	 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
