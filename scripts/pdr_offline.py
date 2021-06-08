@@ -13,6 +13,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import random
 
+acc_offset = np.array([0.09,-0.07,0.07])
+
 
 
 def kalmanFilter(imu_filename,mag_filename):
@@ -421,35 +423,53 @@ def integration(t_list,f_list):
 
 def calFootLength(acc_step,step_idx,K,bias):
 	ret = []
-	acc_max = np.amax(acc_step[step_idx[0]:,1])
-	acc_min = np.amin(acc_step[step_idx[0]:,1])
+#初歩の処理
+	acc_max = np.amax(acc_step[0:step_idx[0]+1,1])
+	acc_min = acc_step[step_idx[0],1]
 	ret.append(K*(acc_max-acc_min)**(1/4))
-	for i in range(len(step_idx)-1):
-		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
-		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
+#初歩以外の処理
+	for i in range(1,len(step_idx)):
+		acc_max = np.amax(acc_step[step_idx[i-1]:step_idx[i]+1,1])
+		acc_min = acc_step[step_idx[i],1]
 		ret.append(K*(acc_max-acc_min)**(1/4)+bias)
 
 
-	
 	return ret
+
+
 
 def calFootVelo(acc_step,step_idx,K,bias):
 	step_num = len(step_idx) #歩数
 	ret = np.zeros((step_num,2))
+#初回なし
+	'''
 	acc_max = np.amax(acc_step[step_idx[0]:,1])
 	acc_min = np.amin(acc_step[step_idx[0]:,1])
 	length = K*(acc_max-acc_min)**(1/4)
-	for i in range(len(step_idx)-1):
-		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
-		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
+	'''
+	for i in range(1,len(step_idx)):
+		acc_max = np.amax(acc_step[step_idx[i-1]:step_idx[i]+1,1])
+		acc_min = acc_step[step_idx[i],1]
 		length = K*(acc_max-acc_min)**(1/4)
-		velo = length / (acc_step[step_idx[i+1],0] - acc_step[step_idx[i],0])
+		velo = length / (acc_step[step_idx[i],0] - acc_step[step_idx[i-1],0])
 
-		timestamp = (acc_step[step_idx[i+1],0] + acc_step[step_idx[i],0])/2
+		timestamp = (acc_step[step_idx[i],0] + acc_step[step_idx[i-1],0])/2
 		ret[i,0] = timestamp
 		ret[i,1] = velo
 
 	return ret
+
+def calFootLength_TianModel(acc, step_idx,height,k):
+	ret = []
+	for i in range(1,len(step_idx)):
+		delta =	acc[step_idx[i],0] - acc[step_idx[i-1],0] #タイムスタンプの差分を取得 
+		freq = 1/delta
+		length = k*height*math.sqrt(freq)
+		ret.append(length)
+
+	return ret
+
+
 
 def leastSquaresMethod(x_list,y_list):
 	x_cov = np.var(x_list)
@@ -607,7 +627,7 @@ def StepCount(filename): #ステップ数を検証する為だけのテスト用
 	raw_imu_data = readAccelFromCSV(filename)
 	start_time = raw_imu_data[0,0]
 	raw_imu_data_timescale = timestampFromStartTime(raw_imu_data,start_time)
-	acc_calib = removeOffset(raw_imu_data_timescale,0.0,0.0,0.0)
+	acc_calib = removeOffset(raw_imu_data_timescale,acc_offset[0],acc_offset[1],acc_offset[2])
 	acc_step = calAccStep(acc_calib)
 	step_idx= findFootStep(acc_step,50)
 	step_cnt = len(step_idx)
@@ -619,7 +639,7 @@ def addPlotSample(filename,x_plot,y_plot):
 	raw_imu_data = readAccelFromCSV(filename+'_imu.csv')
 	start_time = raw_imu_data[0,0]
 	raw_imu_data_timescale = timestampFromStartTime(raw_imu_data,start_time)
-	acc_calib = removeOffset(raw_imu_data_timescale,0.0,0.0,0.0)
+	acc_calib = removeOffset(raw_imu_data_timescale,acc_offset[0],acc_offset[1],acc_offset[2])
 	acc_step = calAccStep(acc_calib)
 
 	raw_velo_data = readGNSSVeloFromCSV(filename+'_velo.csv')
@@ -639,16 +659,17 @@ def addPlotSample(filename,x_plot,y_plot):
 	step_idx= findFootStep(acc_step,50)
 
 	step_num = len(step_idx) #歩数
-	x_list = np.zeros((step_num,2))
-	for i in range(len(step_idx)-1):
-		acc_max = np.amax(acc_step[step_idx[i]:step_idx[i+1],1])
-		acc_min = np.amin(acc_step[step_idx[i]:step_idx[i+1],1])
+	x_list = np.zeros((step_num-1,2))
+#初回ステップは無視
+	for i in range(1,len(step_idx)):
+		acc_max = np.amax(acc_step[step_idx[i-1]:step_idx[i],1])
+		acc_min = np.amin(acc_step[step_idx[i],1])
 		tmp = (acc_max-acc_min)**(1/4)
-		x = tmp / (acc_step[step_idx[i+1],0] - acc_step[step_idx[i],0])
+		x = tmp / (acc_step[step_idx[i],0] - acc_step[step_idx[i-1],0])
 
-		timestamp = (acc_step[step_idx[i+1],0] + acc_step[step_idx[i],0])/2
-		x_list[i,0] = timestamp
-		x_list[i,1] = x
+		timestamp = (acc_step[step_idx[i],0] + acc_step[step_idx[i-1],0])/2
+		x_list[i-1,0] = timestamp
+		x_list[i-1,1] = x
 
 
 	idx = matchTime(x_list,velo_horizon_data,0.1)
@@ -683,15 +704,13 @@ def calDistanceFromSLAM(filename):
 	return length
 
 
+
+
 	
 def main():
-	StepCount(sys.argv[1])
-	return
-	#length = calDistanceFromSLAM(sys.argv[2])
-	#print('slam:')
-	#print(length)
-	calWalkingDistance(sys.argv[1],0.5826)
-	return
+
+	#calWalkingDistance(sys.argv[1],0.44)
+	#return
 
 	#kalmanFilter(sys.argv[1],sys.argv[2])
 
