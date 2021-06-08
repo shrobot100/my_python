@@ -168,6 +168,7 @@ include_directories(
 	 scripts/pdr.py
 	 scripts/pdr_offline.py
 	 scripts/calibrate.py
+	 scripts/imu_calibration.py
 	 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
